@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
+import OnboardingTutorial from '../components/OnboardingTutorial';
+
+interface StarterPokemon {
+  id: number;
+  name: string;
+  type: string[];
+}
 
 interface User {
   id: number;
@@ -9,6 +16,12 @@ interface User {
   elo_rating: number;
   wins: number;
   losses: number;
+  starter_pokemon?: StarterPokemon;
+}
+
+interface AuthResponse {
+  token: string;
+  user: User;
 }
 
 interface AuthContextType {
@@ -33,7 +46,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [shouldRedirectToTutorial, setShouldRedirectToTutorial] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,21 +60,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Effet pour gérer la redirection vers le tutoriel
-  useEffect(() => {
-    if (user && shouldRedirectToTutorial) {
-      console.log('Redirection vers le tutoriel après inscription');
-      setShouldRedirectToTutorial(false);
-      navigate('/tutorial');
+  const handleOnboardingComplete = async (selectedStarter: StarterPokemon) => {
+    if (user) {
+      try {
+        // TODO: Appeler l'API pour sauvegarder le starter choisi
+        setUser({ ...user, starter_pokemon: selectedStarter });
+        setShowOnboarding(false);
+        navigate('/');
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde du starter:', error);
+      }
     }
-  }, [user, shouldRedirectToTutorial, navigate]);
+  };
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await authApi.login({ email, password });
+      const response = await authApi.login({ email, password }) as AuthResponse;
       if (response.token && response.user) {
         localStorage.setItem('token', response.token);
         setUser(response.user);
+        if (!response.user.starter_pokemon) {
+          setShowOnboarding(true);
+        }
       } else {
         throw new Error('Réponse de connexion invalide');
       }
@@ -74,18 +94,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    setShowOnboarding(false);
   };
 
   const register = async (username: string, email: string, password: string) => {
     try {
-      const response = await authApi.register({ username, email, password });
+      const response = await authApi.register({ username, email, password }) as AuthResponse;
       console.log('Réponse d\'inscription:', response);
       
       if (response.token && response.user) {
         console.log('Inscription réussie, stockage du token et mise à jour de l\'utilisateur');
         localStorage.setItem('token', response.token);
         setUser(response.user);
-        setShouldRedirectToTutorial(true);
+        setShowOnboarding(true);
       } else {
         console.error('Réponse d\'inscription invalide:', response);
         throw new Error('Réponse d\'inscription invalide');
@@ -108,6 +129,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={value}>
       {children}
+      <OnboardingTutorial
+        open={showOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
     </AuthContext.Provider>
   );
 };

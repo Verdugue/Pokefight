@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Stepper,
-  Step,
-  StepLabel,
+  
+  
+  
   Button,
   Typography,
-  Paper,
+  
   Grid,
   Card,
   CardContent,
   CardMedia,
   Dialog,
+  IconButton,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import styles from '../styles/OnboardingTutorial.module.css';
 
 interface StarterPokemon {
   id: number;
@@ -47,111 +50,62 @@ const STARTER_POKEMONS: StarterPokemon[] = [
   },
 ];
 
-const tutorialSteps = [
+interface TutorialStepContent {
+  label: string;
+  title: string;
+  content: string | ((props: { onSelectStarter: (pokemon: StarterPokemon) => void }) => React.ReactNode);
+  image?: string;
+}
+
+const tutorialSteps: TutorialStepContent[] = [
   {
     label: 'Bienvenue',
-    content: (
-      <>
-        <Typography variant="h5" gutterBottom>
-          Bienvenue dans le monde des Pokémon !
-        </Typography>
-        <Typography paragraph>
-          Je suis le Professeur Chen, et je serai votre guide dans cette aventure. 
-          Dans ce monde, vous pourrez capturer des Pokémon, les entraîner, et devenir 
-          le meilleur dresseur !
-        </Typography>
-      </>
-    ),
+    title: 'Bienvenue dans le monde des Pokémon !',
+    content: 'Je suis le Professeur Chen, et je serai votre guide dans cette aventure. Dans ce monde, vous pourrez capturer des Pokémon, les entraîner, et devenir le meilleur dresseur !',
+    image: '/professor-oak.png'
   },
   {
     label: 'Les bases',
-    content: (
-      <>
-        <Typography variant="h5" gutterBottom>
-          Voici ce qui vous attend
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">Combats</Typography>
-                <Typography>
-                  Affrontez d'autres dresseurs en temps réel et grimpez dans le classement !
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">Exploration</Typography>
-                <Typography>
-                  Partez à la recherche de Pokémon sauvages et complétez votre Pokédex !
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">Communauté</Typography>
-                <Typography>
-                  Rejoignez des équipes, participez à des événements et échangez avec d'autres dresseurs !
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </>
-    ),
+    title: 'Voici ce qui vous attend',
+    content: 'Dans PokéFight, vous pourrez affronter d\'autres dresseurs en temps réel, grimper dans le classement, et devenir le meilleur dresseur. Chaque victoire vous rapprochera du sommet !',
+    image: '/battle-scene.png'
   },
   {
     label: 'Choix du starter',
-    content: (props: { onSelectStarter: (pokemon: StarterPokemon) => void }) => (
-      <>
-        <Typography variant="h5" gutterBottom>
-          Choisissez votre premier Pokémon
-        </Typography>
-        <Typography paragraph>
-          Ce Pokémon sera votre fidèle compagnon tout au long de votre aventure. 
-          Choisissez-le avec soin !
-        </Typography>
-        <Grid container spacing={3}>
-          {STARTER_POKEMONS.map((pokemon) => (
-            <Grid item xs={12} md={4} key={pokemon.id}>
-              <Card 
-                sx={{ 
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                  },
-                }}
-                onClick={() => props.onSelectStarter(pokemon)}
-              >
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={pokemon.image}
-                  alt={pokemon.name}
-                  sx={{ objectFit: 'contain', p: 2 }}
-                />
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    {pokemon.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Types: {pokemon.type.join(', ')}
-                  </Typography>
-                  <Typography variant="body2">
-                    {pokemon.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </>
+    title: 'Choisissez votre premier Pokémon',
+    content: ({ onSelectStarter }) => (
+      <Grid container spacing={3}>
+        {STARTER_POKEMONS.map((pokemon) => (
+          <Grid item xs={12} md={4} key={pokemon.id}>
+            <Card 
+              className={styles.starterCard}
+              onClick={() => onSelectStarter(pokemon)}
+            >
+              <CardMedia
+                component="img"
+                className={styles.starterImage}
+                image={pokemon.image}
+                alt={pokemon.name}
+              />
+              <CardContent className={styles.starterInfo}>
+                <Typography variant="h6" gutterBottom>
+                  {pokemon.name}
+                </Typography>
+                <Box mb={1}>
+                  {pokemon.type.map((type) => (
+                    <span key={type} className={`${styles.starterType} ${styles[type]}`}>
+                      {type}
+                    </span>
+                  ))}
+                </Box>
+                <Typography variant="body2">
+                  {pokemon.description}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
     ),
   },
 ];
@@ -169,6 +123,10 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ open, onComplet
     setActiveStep((prevStep) => prevStep + 1);
   };
 
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
+  };
+
   const handleSelectStarter = (pokemon: StarterPokemon) => {
     setSelectedStarter(pokemon);
   };
@@ -179,46 +137,89 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ open, onComplet
     }
   };
 
+  const currentStep = tutorialSteps[activeStep];
+  const isLastStep = activeStep === tutorialSteps.length - 1;
+
   return (
     <Dialog 
       open={open} 
-      maxWidth="md" 
-      fullWidth 
+      maxWidth={false}
+      className={styles.tutorialDialog}
       disableEscapeKeyDown
-      disableBackdropClick
     >
-      <Box sx={{ p: 4 }}>
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          {tutorialSteps.map((step) => (
-            <Step key={step.label}>
-              <StepLabel>{step.label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+      <Box className={styles.contentContainer}>
+        {/* Flèche gauche */}
+        <IconButton
+          className={`${styles.navigationArrow} ${styles.left}`}
+          onClick={handleBack}
+          disabled={activeStep === 0}
+        >
+          <ArrowBackIcon />
+        </IconButton>
 
-        <Paper sx={{ p: 3, mb: 3 }}>
-          {activeStep === tutorialSteps.length - 1 ? (
-            tutorialSteps[activeStep].content({ onSelectStarter: handleSelectStarter })
+        {/* Colonne de texte */}
+        <Box className={styles.textColumn}>
+          <Typography variant="h4" gutterBottom>
+            {currentStep.title}
+          </Typography>
+          {typeof currentStep.content === 'string' ? (
+            <Typography variant="body1">
+              {currentStep.content}
+            </Typography>
           ) : (
-            tutorialSteps[activeStep].content
-          )}
-        </Paper>
-
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-          {activeStep === tutorialSteps.length - 1 ? (
-            <Button
-              variant="contained"
-              onClick={handleComplete}
-              disabled={!selectedStarter}
-            >
-              Commencer l'aventure
-            </Button>
-          ) : (
-            <Button variant="contained" onClick={handleNext}>
-              Suivant
-            </Button>
+            currentStep.content({ onSelectStarter: handleSelectStarter })
           )}
         </Box>
+
+        {/* Colonne d'image */}
+        {!isLastStep && (
+          <Box className={styles.imageColumn}>
+            {currentStep.image ? (
+              <img
+                src={currentStep.image}
+                alt={currentStep.label}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <Typography variant="h6" textAlign="center">
+                Image à venir
+              </Typography>
+            )}
+          </Box>
+        )}
+
+        {/* Flèche droite ou bouton de fin */}
+        {isLastStep ? (
+          <Button
+            variant="contained"
+            onClick={handleComplete}
+            disabled={!selectedStarter}
+            sx={{
+              position: 'absolute',
+              right: 24,
+              bottom: 24,
+              backgroundColor: 'white',
+              color: 'var(--pokemon-red)',
+              '&:hover': {
+                backgroundColor: 'var(--pokemon-yellow)',
+              }
+            }}
+          >
+            Commencer l'aventure
+          </Button>
+        ) : (
+          <IconButton
+            className={`${styles.navigationArrow} ${styles.right}`}
+            onClick={handleNext}
+          >
+            <ArrowForwardIcon />
+          </IconButton>
+        )}
+
+        {/* Indicateur de progression */}
+        <Typography className={styles.progressIndicator}>
+          {activeStep + 1} / {tutorialSteps.length}
+        </Typography>
       </Box>
     </Dialog>
   );

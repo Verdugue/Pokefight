@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate, Link as RouterLink } from 'react-router-dom';
+import {  Navigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -14,7 +14,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
+  
   const { register, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
@@ -73,7 +73,7 @@ const RegisterPage: React.FC = () => {
 
     try {
       await register(formData.username, formData.email, formData.password);
-      navigate('/');
+      // La redirection est maintenant gérée par AuthContext
     } catch (err) {
       setError('Erreur lors de l\'inscription');
     } finally {

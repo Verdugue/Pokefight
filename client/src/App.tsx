@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Container, CircularProgress, Box } from '@mui/material'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
@@ -50,11 +50,15 @@ const RootRoute: React.FC = () => {
 
 const AppRoutes = () => {
   const { user, logout, isAuthenticated } = useAuth()
+  const location = useLocation()
+
+  // Ne pas afficher le header sur la page de tutoriel
+  const showHeader = location.pathname !== '/tutorial'
 
   return (
     <Box>
-      <Header />
-      <Box component="main" sx={{ px: 4 }}>
+      {showHeader && <Header />}
+      <Box component="main" sx={{ px: showHeader ? 4 : 0 }}>
         <Routes>
           {/* Route racine avec redirection conditionnelle */}
           <Route path="/" element={<RootRoute />} />

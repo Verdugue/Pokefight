@@ -1,0 +1,165 @@
+.tutorialDialog {
+  background-color: var(--pokemon-red);
+}
+
+.tutorialDialog :global(.MuiDialog-paper) {
+  background-color: transparent;
+  box-shadow: none;
+  max-width: 90vw;
+  margin: 0;
+}
+
+.contentContainer {
+  display: flex;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  position: relative;
+  min-height: 80vh;
+}
+
+.textColumn, .imageColumn {
+  flex: 1;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.navigationArrow {
+  position: fixed !important;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px !important;
+  height: 80px !important;
+  background-color: white !important;
+  border: 2px solid black !important;
+  transition: all var(--transition-speed) var(--transition-ease) !important;
+}
+
+.navigationArrow:hover {
+  background-color: var(--pokemon-yellow) !important;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.navigationArrow:global(.Mui-disabled) {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  transform: translateY(-50%) scale(1);
+}
+
+.navigationArrow :global(.MuiSvgIcon-root) {
+  font-size: 40px !important;
+  color: var(--pokemon-red);
+}
+
+.navigationArrow:hover :global(.MuiSvgIcon-root) {
+  color: var(--pokemon-blue);
+}
+
+.navigationArrow.left {
+  left: var(--spacing-xl);
+  border-radius: 50% 0 0 50% !important;
+}
+
+.navigationArrow.right {
+  right: var(--spacing-xl);
+  border-radius: 0 50% 50% 0 !important;
+}
+
+.progressIndicator {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.starterCard {
+  cursor: pointer;
+  transition: transform var(--transition-speed) var(--transition-ease);
+  background-color: white;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+}
+
+.starterCard:hover {
+  transform: scale(1.05);
+}
+
+.starterCard.selected {
+  border: 3px solid var(--pokemon-yellow);
+  box-shadow: 0 0 20px var(--pokemon-yellow);
+}
+
+.starterImage {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  padding: var(--spacing-md);
+  background-color: #f5f5f5;
+}
+
+.starterInfo {
+  padding: var(--spacing-md);
+}
+
+.starterType {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  margin-right: var(--spacing-xs);
+  font-size: 0.875rem;
+  color: white;
+}
+
+.starterType.Plante {
+  background-color: #78C850;
+}
+
+.starterType.Poison {
+  background-color: #A040A0;
+}
+
+.starterType.Feu {
+  background-color: #F08030;
+}
+
+.starterType.Eau {
+  background-color: #6890F0;
+}
+
+@media (max-width: 768px) {
+  .contentContainer {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .textColumn, .imageColumn {
+    min-height: 300px;
+  }
+
+  .navigationArrow {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .navigationArrow :global(.MuiSvgIcon-root) {
+    font-size: 24px !important;
+  }
+
+  .navigationArrow.left {
+    left: var(--spacing-sm);
+  }
+
+  .navigationArrow.right {
+    right: var(--spacing-sm);
+  }
+} 

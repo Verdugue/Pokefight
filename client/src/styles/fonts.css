@@ -1,0 +1,101 @@
+/* Police principale Pokemon */
+@font-face {
+  font-family: 'Pokemon Solid';
+  src: url('../fonts/Pokemon-Solid.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pokemon Hollow';
+  src: url('../fonts/Pokemon-Hollow.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Police pour le texte */
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('../fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Classes utilitaires pour les polices */
+.pokemon-title {
+  font-family: 'Pokemon Solid', sans-serif;
+  letter-spacing: 2px;
+  -webkit-text-stroke: 2px var(--pokemon-blue);
+  color: var(--pokemon-yellow);
+  text-shadow: 
+    3px 3px 0 var(--pokemon-blue),
+    -1px -1px 0 var(--pokemon-blue),  
+    1px -1px 0 var(--pokemon-blue),
+    -1px 1px 0 var(--pokemon-blue),
+    1px 1px 0 var(--pokemon-blue);
+}
+
+.pokemon-title-hollow {
+  font-family: 'Pokemon Hollow', sans-serif;
+  letter-spacing: 2px;
+  color: var(--pokemon-blue);
+}
+
+.pixel-text {
+  font-family: 'Press Start 2P', cursive;
+  line-height: 1.5;
+  letter-spacing: 1px;
+}
+
+/* Tailles prédéfinies pour les titres */
+.title-xl {
+  font-size: 4rem;
+  margin-bottom: 2rem;
+}
+
+.title-lg {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.title-md {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.title-sm {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Animation de texte clignotant */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.text-blink {
+  animation: blink 1s infinite;
+}
+
+/* Media queries pour la responsivité */
+@media (max-width: 768px) {
+  .title-xl {
+    font-size: 3rem;
+  }
+
+  .title-lg {
+    font-size: 2.5rem;
+  }
+
+  .title-md {
+    font-size: 1.75rem;
+  }
+
+  .title-sm {
+    font-size: 1.25rem;
+  }
+} 
