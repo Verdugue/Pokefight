@@ -20,6 +20,17 @@ PokéFight est une application web permettant aux joueurs de s'affronter en util
 
 ## 📌 Conception du Projet
 
+## Installation du projet
+
+   cd /client
+      npm install
+      npm run dev
+
+   cd /server
+      npm install
+      npm run dev
+
+
 ### Analyse des Besoins
 - **Attentes** :
   - Interface utilisateur intuitive et responsive

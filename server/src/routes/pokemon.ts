@@ -37,7 +37,7 @@ router.post('/explore/:areaId', authenticateToken, async (req: AuthRequest, res)
 
     // Sélectionner un Pokémon aléatoire de la zone
     const [pokemon] = await pool.query(`
-      SELECT p.id, p.name, p.type, 
+      SELECT p.id, p.name, p.primary_type, p.secondary_type, 
              FLOOR(RAND() * (a.max_level - a.min_level + 1) + a.min_level) as level,
              FLOOR(RAND() * 50 + 50) as hp,
              FLOOR(RAND() * 50 + 50) as max_hp,
@@ -114,7 +114,8 @@ const initializeDatabase = async () => {
       CREATE TABLE IF NOT EXISTS pokemon (
         id INT PRIMARY KEY,
         name VARCHAR(50) NOT NULL,
-        type VARCHAR(50) NOT NULL,
+        primary_type VARCHAR(50) NOT NULL,
+        secondary_type VARCHAR(50),
         catch_rate INT DEFAULT 50
       )
     `);
@@ -126,10 +127,10 @@ const initializeDatabase = async () => {
     if (existingPokemonRows[0].count === 0) {
       // Insérer les starters
       await pool.query(`
-        INSERT INTO pokemon (id, name, type, catch_rate) VALUES
-        (1, 'Bulbizarre', 'Plante, Poison', 45),
-        (4, 'Salamèche', 'Feu', 45),
-        (7, 'Carapuce', 'Eau', 45)
+        INSERT INTO pokemon (id, name, primary_type, secondary_type, catch_rate) VALUES
+        (1, 'Bulbizarre', 'Plante, Poison', null, 45),
+        (4, 'Salamèche', 'Feu', null, 45),
+        (7, 'Carapuce', 'Eau', null, 45)
       `);
       console.log('Starters ajoutés avec succès');
     }
@@ -244,7 +245,7 @@ router.get('/owned', authenticateToken, async (req: AuthRequest, res) => {
       SELECT 
         p.id,
         p.name,
-        p.type,
+        CONCAT(p.primary_type, IF(p.secondary_type IS NOT NULL, CONCAT(',', p.secondary_type), '')) as type,
         up.level,
         up.hp,
         up.max_hp as maxHp,
@@ -367,7 +368,7 @@ router.get('/team', authenticateToken, async (req: AuthRequest, res) => {
       SELECT 
         p.id,
         p.name,
-        p.type,
+        CONCAT(p.primary_type, IF(p.secondary_type IS NOT NULL, CONCAT(',', p.secondary_type), '')) as type,
         up.level,
         up.hp,
         up.max_hp as maxHp,
@@ -416,7 +417,7 @@ router.get('/pokedex', authenticateToken, async (req: AuthRequest, res) => {
       SELECT 
         p.id,
         p.name,
-        p.type,
+        CONCAT(p.primary_type, IF(p.secondary_type IS NOT NULL, CONCAT(',', p.secondary_type), '')) as type,
         CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', p.id, '.png') as image,
         EXISTS(
           SELECT 1 
@@ -465,7 +466,14 @@ router.post('/roulette/roll', authenticateToken, async (req: AuthRequest, res) =
     const ownedIds = ownedRows.map((p: any) => p.pokemon_id + (p.is_shiny ? '_shiny' : ''));
 
     // Sélectionner tous les Pokémon
-    const [allPokemon] = await pool.query('SELECT * FROM pokemon');
+    const [allPokemon] = await pool.query(`
+      SELECT 
+        p.id,
+        p.name,
+        CONCAT(p.primary_type, IF(p.secondary_type IS NOT NULL, CONCAT(',', p.secondary_type), '')) as type,
+        p.rarity
+      FROM pokemon p
+    `);
     const allPokemonRows = allPokemon as RowDataPacket[];
     
     // Calculer les probabilités
@@ -513,7 +521,7 @@ router.post('/roulette/roll', authenticateToken, async (req: AuthRequest, res) =
     const response = {
       id: pokemon.id,
       name: pokemon.name,
-      type: pokemon.type.split(','),
+      type: pokemon.type.split(',').map((t: string) => t.trim()),
       image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${isShiny ? 'shiny/' : ''}${pokemon.id}.png`,
       isShiny,
       rarity: pokemon.rarity
@@ -576,18 +584,16 @@ router.get('/moves/:pokemonId', authenticateToken, async (req, res) => {
 });
 
 // Route pour récupérer les attaques apprises par un Pokémon possédé
-router.get('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
+router.get('/owned/:pokemonId/moves', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { pokemonId } = req.params;
-    const { userId } = req.user;
+    const userId = req.user!.id;
 
-    // Vérifier que le Pokémon appartient bien à l'utilisateur
-    const ownershipCheck = await pool.query(
-      'SELECT id FROM user_pokemon WHERE id = $1 AND user_id = $2',
+    const [ownershipCheck] = await pool.query(
+      'SELECT id FROM user_pokemon WHERE id = ? AND user_id = ?',
       [pokemonId, userId]
-    );
-
-    if (ownershipCheck.rows.length === 0) {
+    ) as RowDataPacket[];
+    if (!ownershipCheck || (ownershipCheck as RowDataPacket[]).length === 0) {
       return res.status(403).json({ error: 'Ce Pokémon ne vous appartient pas' });
     }
 
@@ -597,10 +603,10 @@ router.get('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
       FROM moves m
       JOIN pokemon_moves pm ON m.id = pm.move_id
       JOIN types t ON m.type_id = t.id
-      WHERE pm.pokemon_id = $1
+      WHERE pm.pokemon_id = ?
       ORDER BY pm.slot ASC
     `;
-    const { rows } = await pool.query(query, [pokemonId]);
+    const [rows] = await pool.query(query, [pokemonId]);
     res.json(rows);
   } catch (error) {
     console.error('Erreur lors de la récupération des attaques:', error);
@@ -609,106 +615,79 @@ router.get('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
 });
 
 // Route pour ajouter une attaque à un Pokémon possédé
-router.post('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
-  const client = await pool.connect();
+router.post('/owned/:pokemonId/moves', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { pokemonId } = req.params;
     const { moveId, slot } = req.body;
-    const { userId } = req.user;
-
-    await client.query('BEGIN');
+    const userId = req.user!.id;
 
     // Vérifier que le Pokémon appartient à l'utilisateur
-    const ownershipCheck = await client.query(
-      'SELECT id FROM user_pokemon WHERE id = $1 AND user_id = $2',
+    const [ownershipCheck] = await pool.query(
+      'SELECT id FROM user_pokemon WHERE id = ? AND user_id = ?',
       [pokemonId, userId]
-    );
-
-    if (ownershipCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+    ) as RowDataPacket[];
+    if (!ownershipCheck || (ownershipCheck as RowDataPacket[]).length === 0) {
       return res.status(403).json({ error: 'Ce Pokémon ne vous appartient pas' });
     }
 
     // Vérifier que le Pokémon peut apprendre cette attaque
-    const moveCheck = await client.query(
-      'SELECT 1 FROM pokemon_learnable_moves WHERE pokemon_id = $1 AND move_id = $2',
+    const [moveCheck] = await pool.query(
+      'SELECT 1 FROM pokemon_learnable_moves WHERE pokemon_id = ? AND move_id = ?',
       [pokemonId, moveId]
-    );
-
-    if (moveCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+    ) as RowDataPacket[];
+    if (!moveCheck || (moveCheck as RowDataPacket[]).length === 0) {
       return res.status(400).json({ error: 'Ce Pokémon ne peut pas apprendre cette attaque' });
     }
 
     // Vérifier si le slot est déjà occupé
     if (slot !== undefined) {
-      const slotCheck = await client.query(
-        'SELECT 1 FROM pokemon_moves WHERE pokemon_id = $1 AND slot = $2',
+      const [slotCheck] = await pool.query(
+        'SELECT 1 FROM pokemon_moves WHERE pokemon_id = ? AND slot = ?',
         [pokemonId, slot]
-      );
-
-      if (slotCheck.rows.length > 0) {
-        await client.query('ROLLBACK');
+      ) as RowDataPacket[];
+      if ((slotCheck as RowDataPacket[]).length > 0) {
         return res.status(400).json({ error: 'Ce slot est déjà occupé' });
       }
     }
 
     // Ajouter l'attaque
-    const result = await client.query(
-      'INSERT INTO pokemon_moves (pokemon_id, move_id, slot) VALUES ($1, $2, $3) RETURNING *',
+    await pool.query(
+      'INSERT INTO pokemon_moves (pokemon_id, move_id, slot) VALUES (?, ?, ?)',
       [pokemonId, moveId, slot]
     );
 
-    await client.query('COMMIT');
-    res.json(result.rows[0]);
+    res.json({ success: true });
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Erreur lors de l\'ajout de l\'attaque:', error);
     res.status(500).json({ error: 'Erreur serveur' });
-  } finally {
-    client.release();
   }
 });
 
 // Route pour supprimer une attaque d'un Pokémon possédé
-router.delete('/owned/:pokemonId/moves/:moveId', authenticateToken, async (req, res) => {
-  const client = await pool.connect();
+router.delete('/owned/:pokemonId/moves/:moveId', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { pokemonId, moveId } = req.params;
-    const { userId } = req.user;
-
-    await client.query('BEGIN');
+    const userId = req.user!.id;
 
     // Vérifier que le Pokémon appartient à l'utilisateur
-    const ownershipCheck = await client.query(
-      'SELECT id FROM user_pokemon WHERE id = $1 AND user_id = $2',
+    const [ownershipCheck] = await pool.query(
+      'SELECT id FROM user_pokemon WHERE id = ? AND user_id = ?',
       [pokemonId, userId]
-    );
-
-    if (ownershipCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+    ) as RowDataPacket[];
+    if (!ownershipCheck || (ownershipCheck as RowDataPacket[]).length === 0) {
       return res.status(403).json({ error: 'Ce Pokémon ne vous appartient pas' });
     }
 
     // Supprimer l'attaque
-    const result = await client.query(
-      'DELETE FROM pokemon_moves WHERE pokemon_id = $1 AND move_id = $2 RETURNING *',
+    const [result] = await pool.query(
+      'DELETE FROM pokemon_moves WHERE pokemon_id = ? AND move_id = ?',
       [pokemonId, moveId]
-    );
+    ) as RowDataPacket[];
 
-    if (result.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Attaque non trouvée' });
-    }
-
-    await client.query('COMMIT');
     res.json({ message: 'Attaque supprimée avec succès' });
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Erreur lors de la suppression de l\'attaque:', error);
     res.status(500).json({ error: 'Erreur serveur' });
-  } finally {
-    client.release();
   }
 });
 
@@ -719,7 +698,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       SELECT 
         p.id,
         p.name,
-        p.type,
+        CONCAT(p.primary_type, IF(p.secondary_type IS NOT NULL, CONCAT(',', p.secondary_type), '')) as type,
         p.catch_rate,
         p.rarity,
         CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', p.id, '.png') as sprite_url,
@@ -748,7 +727,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
       SELECT 
         p.id,
         p.name,
-        p.type,
+        CONCAT(p.primary_type, IF(p.secondary_type IS NOT NULL, CONCAT(',', p.secondary_type), '')) as type,
         p.catch_rate,
         p.rarity,
         CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', p.id, '.png') as sprite_url,
