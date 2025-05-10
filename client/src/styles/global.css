@@ -114,4 +114,25 @@ button:hover {
   .container {
     padding: 0 var(--spacing-sm);
   }
-} 
+}
+
+header, .header, .app-bar, .MuiAppBar-root {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+html, body {
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Supprime le padding sur tous les Box de combat */
+.MuiBox-root {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.combat-root {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}

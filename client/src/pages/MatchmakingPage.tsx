@@ -11,11 +11,13 @@ import {
   CardContent,
   CardMedia,
   Chip,
+  Avatar,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { API_URL } from '../services/api';
 import { Pokemon } from '../types/pokemon';
 import { TYPE_COLORS, PokemonType } from '../utils/typeColors';
+import { useNavigate } from 'react-router-dom';
 
 const MatchmakingPage: React.FC = () => {
   const { token } = useAuth();
@@ -24,6 +26,7 @@ const MatchmakingPage: React.FC = () => {
   const [matchId, setMatchId] = useState<number | null>(null);
   const [opponent, setOpponent] = useState<{ username: string; team: Pokemon[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Fonction pour rejoindre la file d'attente
   const joinQueue = async () => {
@@ -116,6 +119,29 @@ const MatchmakingPage: React.FC = () => {
     };
   }, [matchId, token]);
 
+  useEffect(() => {
+    if (matchFound && matchId) {
+      navigate(`/combat/${matchId}`);
+    }
+  }, [matchFound, matchId, navigate]);
+
+  useEffect(() => {
+    if (isSearching && !matchFound) {
+      const interval = setInterval(async () => {
+        const response = await fetch(`${API_URL}/api/matchmaking/active`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.matchId) {
+          setMatchFound(true);
+          setMatchId(data.matchId);
+          // Optionnel: setOpponent si tu veux afficher l'équipe adverse
+        }
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [isSearching, matchFound, token]);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Paper
@@ -188,7 +214,7 @@ const MatchmakingPage: React.FC = () => {
                 <Card>
                   <CardMedia
                     component="img"
-                    image={pokemon.sprite_url}
+                    image={pokemon.sprite_url || pokemon.image}
                     alt={pokemon.name}
                     sx={{ height: 200, objectFit: 'contain', p: 2 }}
                   />

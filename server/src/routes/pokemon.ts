@@ -85,10 +85,25 @@ router.post('/catch/:pokemonId', authenticateToken, async (req: AuthRequest, res
 
     if (success) {
       // Ajouter le Pokémon à la collection de l'utilisateur
-      await pool.query(
+      const [result] = await pool.query(
         'INSERT INTO user_pokemon (user_id, pokemon_id, level, hp, max_hp) VALUES (?, ?, ?, ?, ?)',
         [userId, pokemonId, poke.level, poke.hp, poke.max_hp]
       );
+      const userPokemonId = (result as any).insertId;
+
+      // Récupérer les attaques apprenables au niveau 1 ou inférieur au niveau du Pokémon
+      const [learnableMoves] = await pool.query(
+        'SELECT move_id FROM pokemon_learnable_moves WHERE pokemon_id = ? AND learn_level <= ? ORDER BY learn_level ASC LIMIT 4',
+        [pokemonId, 5]
+      );
+
+      // Ajouter les attaques dans pokemon_moves
+      for (let i = 0; i < (learnableMoves as any[]).length; i++) {
+        await pool.query(
+          'INSERT INTO pokemon_moves (pokemon_id, move_id, slot) VALUES (?, ?, ?)',
+          [userPokemonId, (learnableMoves as any[])[i].move_id, i]
+        );
+      }
 
       res.json({
         success: true,
@@ -232,6 +247,21 @@ router.post('/starter', authenticateToken, async (req: AuthRequest, res) => {
        VALUES (?, ?, true, 5, 50, 50)`,
       [userId, pokemon_id]
     );
+    const userPokemonId = (result as any).insertId;
+
+    // Récupérer les attaques apprenables au niveau 1 ou inférieur au niveau du Pokémon
+    const [learnableMoves] = await pool.query(
+      'SELECT move_id FROM pokemon_learnable_moves WHERE pokemon_id = ? AND learn_level <= ? ORDER BY learn_level ASC LIMIT 4',
+      [pokemon_id, 5]
+    );
+
+    // Ajouter les attaques dans pokemon_moves
+    for (let i = 0; i < (learnableMoves as any[]).length; i++) {
+      await pool.query(
+        'INSERT INTO pokemon_moves (pokemon_id, move_id, slot) VALUES (?, ?, ?)',
+        [userPokemonId, (learnableMoves as any[])[i].move_id, i]
+      );
+    }
 
     // Ajouter automatiquement le starter dans le slot 0 de l'équipe
     await pool.query(
@@ -577,8 +607,8 @@ router.post('/avatar', authenticateToken, async (req: AuthRequest, res) => {
 router.get('/moves/:pokemonId', authenticateToken, async (req, res) => {
   try {
     const { pokemonId } = req.params;
-    console.log('Récupération des attaques pour le Pokémon:', pokemonId);
-    
+    const maxLevel = parseInt(req.query.maxLevel as string, 10) || 100; // par défaut 100
+
     const query = `
       SELECT 
         m.id, 
@@ -587,16 +617,17 @@ router.get('/moves/:pokemonId', authenticateToken, async (req, res) => {
         m.power, 
         m.accuracy, 
         m.pp, 
-        m.description
+        m.description,
+        plm.learn_level
       FROM moves m
       JOIN pokemon_learnable_moves plm ON m.id = plm.move_id
       JOIN types t ON m.type_id = t.id
       WHERE plm.pokemon_id = ?
+      AND plm.learn_level <= ?
       ORDER BY plm.learn_level ASC
     `;
 
-    const [rows] = await pool.query(query, [pokemonId]);
-    console.log('Attaques trouvées:', rows);
+    const [rows] = await pool.query(query, [pokemonId, maxLevel]);
     res.json(rows);
   } catch (error) {
     console.error('Erreur lors de la récupération des attaques:', error);

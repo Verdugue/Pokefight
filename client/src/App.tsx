@@ -1,6 +1,9 @@
 import React from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Container, CircularProgress, Box } from '@mui/material'
+import { CircularProgress, Box } from '@mui/material'
+import CombatPage from './pages/CombatPage';
+// ...
+
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -124,6 +127,8 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/combat/:matchId" element={<CombatPage />} />
         </Routes>
       </Box>
     </Box>
