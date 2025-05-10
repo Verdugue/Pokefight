@@ -421,10 +421,6 @@ INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
 (95, 29, 1),  -- Tunnel
 (95, 32, 7),  -- Jet de Sable
 (95, 34, 20), -- Éboulement
-(208, 29, 1), -- Tunnel
-(208, 32, 1), -- Jet de Sable
-(208, 33, 1), -- Lance-Pierre
-(208, 34, 1), -- Éboulement
 
 -- Soporifik et évolution
 (96, 1, 1),   -- Charge
