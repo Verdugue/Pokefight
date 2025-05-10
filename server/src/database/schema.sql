@@ -1,5 +1,25 @@
 -- Création de la base de données
-CREATE DATABASE IF NOT EXISTS pokefight;
+DROP DATABASE IF EXISTS pokefight;
+CREATE DATABASE pokefight;
+USE pokefight;
+
+-- Table des types de Pokémon
+CREATE TABLE types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    color VARCHAR(7) NOT NULL
+);
+
+-- Table des Pokémon
+CREATE TABLE pokemon (
+    id INT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    catch_rate INT DEFAULT 50,
+    rarity INT DEFAULT 1 CHECK (rarity BETWEEN 1 AND 4),
+    sprite_url VARCHAR(255),
+    sprite_shiny_url VARCHAR(255)
+);
 
 -- Table des utilisateurs
 CREATE TABLE users (
@@ -7,6 +27,7 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    avatar VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL,
     elo_rating INT DEFAULT 1000,
@@ -14,24 +35,52 @@ CREATE TABLE users (
     losses INT DEFAULT 0
 );
 
+-- Table des zones d'exploration
+CREATE TABLE exploration_areas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    description TEXT,
+    min_level INT DEFAULT 1,
+    max_level INT DEFAULT 100,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table de liaison entre les zones et les Pokémon
+CREATE TABLE area_pokemon (
+    area_id INT,
+    pokemon_id INT,
+    FOREIGN KEY (area_id) REFERENCES exploration_areas(id),
+    FOREIGN KEY (pokemon_id) REFERENCES pokemon(id),
+    PRIMARY KEY (area_id, pokemon_id)
+);
+
 -- Table des Pokémon possédés
-CREATE TABLE owned_pokemon (
+CREATE TABLE user_pokemon (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
-    pokemon_id INT NOT NULL, -- ID du Pokémon dans l'API
-    nickname VARCHAR(50),
+    pokemon_id INT NOT NULL,
     level INT DEFAULT 1,
-    experience INT DEFAULT 0,
+    hp INT DEFAULT 50,
+    max_hp INT DEFAULT 50,
     is_starter BOOLEAN DEFAULT FALSE,
+    is_shiny BOOLEAN DEFAULT FALSE,
+    rarity ENUM('normal', 'legendary') DEFAULT 'normal',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- Stats individuelles (IVs)
-    iv_hp INT CHECK (iv_hp BETWEEN 0 AND 31),
-    iv_attack INT CHECK (iv_attack BETWEEN 0 AND 31),
-    iv_defense INT CHECK (iv_defense BETWEEN 0 AND 31),
-    iv_sp_attack INT CHECK (iv_sp_attack BETWEEN 0 AND 31),
-    iv_sp_defense INT CHECK (iv_sp_defense BETWEEN 0 AND 31),
-    iv_speed INT CHECK (iv_speed BETWEEN 0 AND 31),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (pokemon_id) REFERENCES pokemon(id)
+);
+
+-- Table de l'équipe
+CREATE TABLE team_pokemon (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    pokemon_id INT NOT NULL,
+    slot INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (pokemon_id) REFERENCES pokemon(id),
+    UNIQUE KEY unique_user_slot (user_id, slot),
+    UNIQUE KEY unique_user_pokemon (user_id, pokemon_id),
+    CHECK (slot >= 0 AND slot <= 5)
 );
 
 -- Table des combats
@@ -43,7 +92,7 @@ CREATE TABLE battles (
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMP NULL,
     elo_change INT,
-    battle_log JSON, -- Stocke le déroulement du combat
+    battle_log JSON,
     FOREIGN KEY (player1_id) REFERENCES users(id),
     FOREIGN KEY (player2_id) REFERENCES users(id),
     FOREIGN KEY (winner_id) REFERENCES users(id)
@@ -53,16 +102,48 @@ CREATE TABLE battles (
 CREATE TABLE pokemon_moves (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pokemon_id INT,
-    move_id INT NOT NULL, -- ID du mouvement dans l'API
+    move_id INT NOT NULL,
     pp_ups INT DEFAULT 0,
     slot INT,
-    FOREIGN KEY (pokemon_id) REFERENCES owned_pokemon(id) ON DELETE CASCADE,
-    CONSTRAINT check_pp_ups CHECK (pp_ups BETWEEN 0 AND 3),
-    CONSTRAINT check_slot CHECK (slot BETWEEN 1 AND 4)
+    FOREIGN KEY (pokemon_id) REFERENCES user_pokemon(id) ON DELETE CASCADE,
+    CHECK (pp_ups >= 0 AND pp_ups <= 3),
+    CHECK (slot >= 1 AND slot <= 4)
+);
+
+-- Table des attaques
+CREATE TABLE moves (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    type_id INT NOT NULL,
+    power INT,
+    accuracy INT,
+    pp INT NOT NULL,
+    description TEXT,
+    FOREIGN KEY (type_id) REFERENCES types(id)
+);
+
+-- Table de liaison entre Pokémon et types
+CREATE TABLE pokemon_types (
+    pokemon_id INT,
+    type_id INT,
+    is_primary BOOLEAN DEFAULT true,
+    FOREIGN KEY (pokemon_id) REFERENCES pokemon(id),
+    FOREIGN KEY (type_id) REFERENCES types(id),
+    PRIMARY KEY (pokemon_id, type_id)
+);
+
+-- Table des attaques apprises par niveau
+CREATE TABLE pokemon_learnable_moves (
+    pokemon_id INT,
+    move_id INT,
+    learn_level INT NOT NULL,
+    FOREIGN KEY (pokemon_id) REFERENCES pokemon(id),
+    FOREIGN KEY (move_id) REFERENCES moves(id),
+    PRIMARY KEY (pokemon_id, move_id, learn_level)
 );
 
 -- Index pour améliorer les performances
-CREATE INDEX idx_owned_pokemon_user_id ON owned_pokemon(user_id);
+CREATE INDEX idx_user_pokemon_user_id ON user_pokemon(user_id);
 CREATE INDEX idx_battles_player1_id ON battles(player1_id);
 CREATE INDEX idx_battles_player2_id ON battles(player2_id);
 CREATE INDEX idx_pokemon_moves_pokemon_id ON pokemon_moves(pokemon_id);
@@ -88,4 +169,72 @@ BEGIN
         AND id != NEW.winner_id;
     END IF;
 END//
-DELIMITER ; 
+DELIMITER ;
+
+-- Insérer les types
+INSERT INTO types (name, color) VALUES
+('Normal', '#A8A878'),
+('Feu', '#F08030'),
+('Eau', '#6890F0'),
+('Plante', '#78C850'),
+('Électrik', '#F8D030'),
+('Glace', '#98D8D8'),
+('Combat', '#C03028'),
+('Poison', '#A040A0'),
+('Sol', '#E0C068'),
+('Vol', '#A890F0'),
+('Psy', '#F85888'),
+('Insecte', '#A8B820'),
+('Roche', '#B8A038'),
+('Spectre', '#705898'),
+('Dragon', '#7038F8'),
+('Ténèbres', '#705848'),
+('Acier', '#B8B8D0'),
+('Fée', '#EE99AC');
+
+-- Insérer les Pokémon
+INSERT INTO pokemon (id, name, type, catch_rate, rarity) VALUES
+-- Starters et évolutions
+(1, 'Bulbizarre', 'Plante,Poison', 45, 1),
+(2, 'Herbizarre', 'Plante,Poison', 45, 2),
+(3, 'Florizarre', 'Plante,Poison', 45, 3),
+(4, 'Salamèche', 'Feu', 45, 1),
+(5, 'Reptincel', 'Feu', 45, 2),
+(6, 'Dracaufeu', 'Feu,Vol', 45, 3),
+(7, 'Carapuce', 'Eau', 45, 1),
+(8, 'Carabaffe', 'Eau', 45, 2),
+(9, 'Tortank', 'Eau', 45, 3),
+(10, 'Chenipan', 'Insecte', 255, 1),
+(11, 'Chrysacier', 'Insecte', 120, 2),
+(12, 'Papilusion', 'Insecte,Vol', 45, 3),
+(13, 'Aspicot', 'Insecte,Poison', 255, 1),
+(14, 'Coconfort', 'Insecte,Poison', 120, 2),
+(15, 'Dardargnan', 'Insecte,Poison', 45, 3),
+(16, 'Roucool', 'Normal,Vol', 255, 1),
+(17, 'Roucoups', 'Normal,Vol', 120, 2),
+(18, 'Roucarnage', 'Normal,Vol', 45, 3),
+(19, 'Rattata', 'Normal', 255, 1),
+(20, 'Rattatac', 'Normal', 127, 2),
+(21, 'Piafabec', 'Normal,Vol', 255, 1),
+(22, 'Rapasdepic', 'Normal,Vol', 90, 2),
+(23, 'Abo', 'Poison', 255, 1),
+(24, 'Arbok', 'Poison', 90, 2),
+(25, 'Pikachu', 'Électrik', 190, 2),
+(26, 'Raichu', 'Électrik', 75, 3);
+
+-- Mettre à jour les URLs des sprites
+UPDATE pokemon SET 
+    sprite_url = CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', id, '.png'),
+    sprite_shiny_url = CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/', id, '.png');
+
+-- Ajouter les relations avec les types
+INSERT INTO pokemon_types (pokemon_id, type_id, is_primary)
+SELECT p.id, t.id, true
+FROM pokemon p
+JOIN types t ON t.name = TRIM(SUBSTRING_INDEX(p.type, ',', 1));
+
+INSERT INTO pokemon_types (pokemon_id, type_id, is_primary)
+SELECT p.id, t.id, false
+FROM pokemon p
+JOIN types t ON t.name = TRIM(SUBSTRING_INDEX(p.type, ',', -1))
+WHERE p.type LIKE '%,%'; 

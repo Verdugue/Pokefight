@@ -83,6 +83,14 @@ const Header: React.FC = () => {
               >
                 Mon Équipe
               </Button>
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/roulette"
+                sx={{ mr: 2 }}
+              >
+                Pokéroulette
+              </Button>
             </>
           )}
         </Box>
@@ -97,14 +105,20 @@ const Header: React.FC = () => {
               onClick={handleMenu}
               sx={{
                 p: 0,
-                border: `2px solid ${theme.palette.primary.contrastText}`,
+                border: `2px solid white`,
               }}
             >
               <Avatar
                 alt={user?.username}
-                src={user?.avatar || '/default-avatar.png'}
-                sx={{ width: 32, height: 32 }}
-              />
+                src={user?.avatar}
+                sx={{ 
+                  width: 32, 
+                  height: 32,
+                  bgcolor: 'white'
+                }}
+              >
+                {!user?.avatar && user?.username?.[0].toUpperCase()}
+              </Avatar>
             </IconButton>
             <Menu
               anchorEl={anchorEl}

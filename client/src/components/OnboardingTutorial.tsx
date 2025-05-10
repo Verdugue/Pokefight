@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import {
   Box,
-  
-  
-  
   Button,
   Typography,
-  
   Grid,
   Card,
   CardContent,
@@ -17,14 +13,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import styles from '../styles/OnboardingTutorial.module.css';
-
-interface StarterPokemon {
-  id: number;
-  name: string;
-  type: string[];
-  image: string;
-  description: string;
-}
+import { StarterPokemon } from '../types/pokemon';
 
 const STARTER_POKEMONS: StarterPokemon[] = [
   {
@@ -53,9 +42,18 @@ const STARTER_POKEMONS: StarterPokemon[] = [
 interface TutorialStepContent {
   label: string;
   title: string;
-  content: string | ((props: { onSelectStarter: (pokemon: StarterPokemon) => void }) => React.ReactNode);
+  content: string | ((props: { onSelectStarter: (pokemon: StarterPokemon) => void; selectedStarter: StarterPokemon | null }) => React.ReactNode);
   image?: string;
 }
+
+const renderPokemonTypes = (types: string | string[]) => {
+  const typeArray = Array.isArray(types) ? types : types.split(',');
+  return typeArray.map((type: string) => (
+    <span key={type} className={`${styles.starterType} ${styles[type.toLowerCase()]}`}>
+      {type}
+    </span>
+  ));
+};
 
 const tutorialSteps: TutorialStepContent[] = [
   {
@@ -73,12 +71,12 @@ const tutorialSteps: TutorialStepContent[] = [
   {
     label: 'Choix du starter',
     title: 'Choisissez votre premier Pokémon',
-    content: ({ onSelectStarter }) => (
+    content: ({ onSelectStarter, selectedStarter }) => (
       <Grid container spacing={3}>
         {STARTER_POKEMONS.map((pokemon) => (
           <Grid item xs={12} md={4} key={pokemon.id}>
             <Card 
-              className={styles.starterCard}
+              className={`${styles.starterCard} ${selectedStarter?.id === pokemon.id ? styles.selectedStarter : ''}`}
               onClick={() => onSelectStarter(pokemon)}
             >
               <CardMedia
@@ -92,11 +90,7 @@ const tutorialSteps: TutorialStepContent[] = [
                   {pokemon.name}
                 </Typography>
                 <Box mb={1}>
-                  {pokemon.type.map((type) => (
-                    <span key={type} className={`${styles.starterType} ${styles[type]}`}>
-                      {type}
-                    </span>
-                  ))}
+                  {renderPokemonTypes(pokemon.type)}
                 </Box>
                 <Typography variant="body2">
                   {pokemon.description}
@@ -128,11 +122,25 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ open, onComplet
   };
 
   const handleSelectStarter = (pokemon: StarterPokemon) => {
+    console.log('Données du starter avant sélection:', JSON.stringify({
+      id: pokemon.id,
+      name: pokemon.name,
+      type: pokemon.type,
+      image: pokemon.image,
+      description: pokemon.description
+    }, null, 2));
     setSelectedStarter(pokemon);
   };
 
   const handleComplete = () => {
     if (selectedStarter) {
+      console.log('Données du starter avant envoi:', JSON.stringify({
+        id: selectedStarter.id,
+        name: selectedStarter.name,
+        type: selectedStarter.type,
+        image: selectedStarter.image,
+        description: selectedStarter.description
+      }, null, 2));
       onComplete(selectedStarter);
     }
   };
@@ -143,7 +151,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ open, onComplet
   return (
     <Dialog 
       open={open} 
-      maxWidth={false}
+      maxWidth="lg"
       className={styles.tutorialDialog}
       disableEscapeKeyDown
     >
@@ -157,38 +165,47 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ open, onComplet
           <ArrowBackIcon />
         </IconButton>
 
-        {/* Colonne de texte */}
-        <Box className={styles.textColumn}>
+        {/* Contenu principal */}
+        <Box 
+          className={styles.textColumn} 
+          sx={{ 
+            width: isLastStep ? '100%' : '50%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2
+          }}
+        >
           <Typography variant="h4" gutterBottom>
             {currentStep.title}
           </Typography>
-          {typeof currentStep.content === 'string' ? (
-            <Typography variant="body1">
-              {currentStep.content}
-            </Typography>
-          ) : (
-            currentStep.content({ onSelectStarter: handleSelectStarter })
-          )}
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            {typeof currentStep.content === 'string' ? (
+              <Typography variant="body1">
+                {currentStep.content}
+              </Typography>
+            ) : (
+              currentStep.content({ 
+                onSelectStarter: handleSelectStarter,
+                selectedStarter: selectedStarter
+              })
+            )}
+          </Box>
         </Box>
 
         {/* Colonne d'image */}
         {!isLastStep && (
           <Box className={styles.imageColumn}>
-            {currentStep.image ? (
+            {currentStep.image && (
               <img
                 src={currentStep.image}
                 alt={currentStep.label}
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
-            ) : (
-              <Typography variant="h6" textAlign="center">
-                Image à venir
-              </Typography>
             )}
           </Box>
         )}
 
-        {/* Flèche droite ou bouton de fin */}
+        {/* Navigation */}
         {isLastStep ? (
           <Button
             variant="contained"
@@ -202,6 +219,10 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ open, onComplet
               color: 'var(--pokemon-red)',
               '&:hover': {
                 backgroundColor: 'var(--pokemon-yellow)',
+              },
+              '&:disabled': {
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                color: 'rgba(255, 0, 0, 0.3)',
               }
             }}
           >

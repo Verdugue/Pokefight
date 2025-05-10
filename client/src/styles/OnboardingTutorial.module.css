@@ -10,14 +10,16 @@
 }
 
 .contentContainer {
-  display: flex;
-  gap: var(--spacing-xl);
-  padding: var(--spacing-xl);
   position: relative;
+  width: 100%;
   min-height: 80vh;
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
 }
 
-.textColumn, .imageColumn {
+.textColumn {
   flex: 1;
   background-color: white;
   border: 2px solid black;
@@ -26,6 +28,17 @@
   min-height: 400px;
   display: flex;
   flex-direction: column;
+}
+
+.imageColumn {
+  flex: 1;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  min-height: 400px;
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
@@ -81,22 +94,60 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+.starterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  width: 100%;
+  padding: var(--spacing-md);
+}
+
 .starterCard {
   cursor: pointer;
-  transition: transform var(--transition-speed) var(--transition-ease);
-  background-color: white;
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
   position: relative;
+  overflow: hidden;
 }
 
 .starterCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selectedStarter {
+  border: 3px solid var(--pokemon-yellow);
+  box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
   transform: scale(1.05);
 }
 
-.starterCard.selected {
-  border: 3px solid var(--pokemon-yellow);
-  box-shadow: 0 0 20px var(--pokemon-yellow);
+.selectedStarter::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: var(--pokemon-yellow);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .starterImage {
@@ -120,19 +171,19 @@
   color: white;
 }
 
-.starterType.Plante {
+.starterType.plante {
   background-color: #78C850;
 }
 
-.starterType.Poison {
+.starterType.poison {
   background-color: #A040A0;
 }
 
-.starterType.Feu {
+.starterType.feu {
   background-color: #F08030;
 }
 
-.starterType.Eau {
+.starterType.eau {
   background-color: #6890F0;
 }
 
@@ -140,10 +191,17 @@
   .contentContainer {
     flex-direction: column;
     gap: var(--spacing-md);
+    padding: var(--spacing-md);
   }
 
-  .textColumn, .imageColumn {
+  .textColumn,
+  .imageColumn {
     min-height: 300px;
+    width: 100% !important;
+  }
+
+  .starterGrid {
+    grid-template-columns: 1fr;
   }
 
   .navigationArrow {

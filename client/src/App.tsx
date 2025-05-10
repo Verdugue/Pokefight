@@ -7,6 +7,9 @@ import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
 import MatchmakingPage from './pages/MatchmakingPage'
 import TutorialPage from './pages/TutorialPage'
+import TeamPage from './pages/TeamPage'
+import PokedexPage from './pages/PokedexPage'
+import PokeRoulettePage from './pages/PokeRoulettePage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Header from './components/Header'
 
@@ -99,7 +102,7 @@ const AppRoutes = () => {
             path="/pokedex"
             element={
               <ProtectedRoute>
-                <div>Pokédex (à implémenter)</div>
+                <PokedexPage />
               </ProtectedRoute>
             }
           />
@@ -108,7 +111,16 @@ const AppRoutes = () => {
             path="/team"
             element={
               <ProtectedRoute>
-                <div>Mon Équipe (à implémenter)</div>
+                <TeamPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/roulette"
+            element={
+              <ProtectedRoute>
+                <PokeRoulettePage />
               </ProtectedRoute>
             }
           />

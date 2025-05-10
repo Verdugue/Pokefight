@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRouter from './routes/auth';
+import pokemonRouter from './routes/pokemon';
 import MatchmakingService from './services/MatchmakingService';
 
 // Configuration
@@ -30,6 +31,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/pokemon', pokemonRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

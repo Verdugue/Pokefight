@@ -1,13 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
+import { API_URL } from '../services/api';
 import OnboardingTutorial from '../components/OnboardingTutorial';
-
-interface StarterPokemon {
-  id: number;
-  name: string;
-  type: string[];
-}
+import { StarterPokemon } from '../types/pokemon';
 
 interface User {
   id: number;
@@ -17,6 +13,7 @@ interface User {
   wins: number;
   losses: number;
   starter_pokemon?: StarterPokemon;
+  avatar?: string;
 }
 
 interface AuthResponse {
@@ -28,92 +25,182 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (username: string, email: string, password: string) => Promise<void>;
+  updateAvatar: (avatarUrl: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  token: null,
+  login: async () => {},
+  logout: () => {},
+  register: async () => {},
+  updateAvatar: () => {},
+});
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Vérifier le token au chargement
-    const token = localStorage.getItem('token');
     if (token) {
-      // TODO: Implémenter la vérification du token
-      setIsLoading(false);
+      fetchUserInfo(token);
     } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
+
+  const fetchUserInfo = async (authToken: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        // Ne pas afficher le tutoriel lors de la connexion normale
+        setShowOnboarding(false);
+      } else {
+        // Si la requête échoue, on déconnecte l'utilisateur
+        logout();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des informations utilisateur:', error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleOnboardingComplete = async (selectedStarter: StarterPokemon) => {
-    if (user) {
-      try {
-        // TODO: Appeler l'API pour sauvegarder le starter choisi
-        setUser({ ...user, starter_pokemon: selectedStarter });
-        setShowOnboarding(false);
-        navigate('/');
-      } catch (error) {
-        console.error('Erreur lors de la sauvegarde du starter:', error);
+    try {
+      console.log('Starter reçu:', JSON.stringify(selectedStarter, null, 2));
+      
+      const requestData = {
+        pokemon_id: selectedStarter.id,
+        isStarter: true
+      };
+
+      console.log('Données envoyées à l\'API:', JSON.stringify(requestData, null, 2));
+      
+      const response = await fetch(`${API_URL}/api/pokemon/starter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await response.json();
+      console.log('Réponse brute du serveur:', JSON.stringify({
+        status: response.status,
+        statusText: response.statusText,
+        data
+      }, null, 2));
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Erreur lors de la sélection du starter');
+      }
+
+      // Mettre à jour les informations de l'utilisateur avec le starter
+      if (user) {
+        const updatedUser = {
+          ...user,
+          starter_pokemon: {
+            ...selectedStarter,
+            sprite_url: selectedStarter.image || selectedStarter.sprite_url,
+            type: Array.isArray(selectedStarter.type) ? selectedStarter.type.join(',') : selectedStarter.type,
+            level: data.pokemon?.level || 5,
+            hp: data.pokemon?.hp || 50,
+            max_hp: data.pokemon?.max_hp || 50
+          }
+        };
+        console.log('Mise à jour de l\'utilisateur avec:', JSON.stringify(updatedUser, null, 2));
+        setUser(updatedUser);
+      }
+
+      setShowOnboarding(false);
+      navigate('/team');
+    } catch (error) {
+      console.error('Erreur détaillée lors de la sélection du starter:', error);
+      if (error instanceof Error) {
+        alert(`Erreur: ${error.message}`);
+      } else {
+        alert('Une erreur est survenue lors de la sélection du starter. Veuillez réessayer.');
       }
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await authApi.login({ email, password }) as AuthResponse;
-      if (response.token && response.user) {
-        localStorage.setItem('token', response.token);
-        setUser(response.user);
-        if (!response.user.starter_pokemon) {
-          setShowOnboarding(true);
-        }
-      } else {
-        throw new Error('Réponse de connexion invalide');
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Identifiants invalides');
       }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      setToken(data.token);
+      navigate('/team'); // Rediriger directement vers l'équipe après la connexion
     } catch (error) {
-      console.error('Erreur de connexion:', error);
       throw error;
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
-    setShowOnboarding(false);
+    navigate('/login');
   };
 
   const register = async (username: string, email: string, password: string) => {
     try {
-      const response = await authApi.register({ username, email, password }) as AuthResponse;
-      console.log('Réponse d\'inscription:', response);
-      
-      if (response.token && response.user) {
-        console.log('Inscription réussie, stockage du token et mise à jour de l\'utilisateur');
-        localStorage.setItem('token', response.token);
-        setUser(response.user);
-        setShowOnboarding(true);
-      } else {
-        console.error('Réponse d\'inscription invalide:', response);
-        throw new Error('Réponse d\'inscription invalide');
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'inscription');
       }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      setToken(data.token);
+      setShowOnboarding(true); // Afficher le tutoriel uniquement après l'inscription
+      navigate('/'); // La redirection vers l'équipe se fera après la sélection du starter
     } catch (error) {
-      console.error('Erreur d\'inscription:', error);
       throw error;
+    }
+  };
+
+  const updateAvatar = (avatarUrl: string) => {
+    if (user) {
+      setUser({ ...user, avatar: avatarUrl });
     }
   };
 
@@ -121,9 +208,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user,
     isLoading,
+    token,
     login,
     logout,
     register,
+    updateAvatar,
   };
 
   return (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -12,7 +12,15 @@ import {
   List,
   ListItem,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  IconButton,
 } from '@mui/material';
+import { API_URL } from '../services/api';
+import CloseIcon from '@mui/icons-material/Close';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProfilePageProps {
   user: {
@@ -22,13 +30,76 @@ interface ProfilePageProps {
     wins?: number;
     losses?: number;
     pokemon_count?: number;
+    avatar?: string;
   };
   onLogout: () => void;
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  
+  const { updateAvatar } = useAuth();
+  const [ownedPokemon, setOwnedPokemon] = useState<any[]>([]);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tempSelected, setTempSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Fetch owned Pokémon for avatar selection
+    const fetchOwned = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/pokemon/owned`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const data = await response.json();
+        setOwnedPokemon(data);
+      } catch (err) {
+        setOwnedPokemon([]);
+      }
+    };
+    fetchOwned();
+  }, []);
+
+  const handleAvatarChange = async (sprite: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/pokemon/avatar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ avatarUrl: sprite })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update avatar');
+      }
+
+      setSelectedAvatar(sprite);
+      setAvatarDialogOpen(false);
+      updateAvatar(sprite);
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      alert('Failed to update avatar');
+    }
+  };
+
+  const handleOpenAvatarDialog = () => {
+    setTempSelected(selectedAvatar);
+    setAvatarDialogOpen(true);
+  };
+
+  const handleCloseAvatarDialog = () => {
+    setAvatarDialogOpen(false);
+    setSearchTerm('');
+  };
+
+  const filteredPokemon = ownedPokemon.filter((poke) =>
+    poke.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleLogout = () => {
     onLogout();
     navigate('/login');
@@ -37,6 +108,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout }) => {
   const winRate = user.wins && user.losses 
     ? ((user.wins / (user.wins + user.losses)) * 100).toFixed(1)
     : '0';
+
+  // Calcul du nombre d'espèces uniques de Pokémon capturés
+  const pokemonCount = new Set(ownedPokemon.map(p => p.id)).size;
 
   return (
     <Container maxWidth="md">
@@ -49,11 +123,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout }) => {
                 sx={{
                   width: 80,
                   height: 80,
-                  bgcolor: 'primary.main',
+                  bgcolor: 'white',
                   fontSize: '2rem',
                 }}
+                src={selectedAvatar || user.avatar || undefined}
               >
-                {user.username[0].toUpperCase()}
+                {!selectedAvatar && !user.avatar && user.username[0].toUpperCase()}
               </Avatar>
               <Box>
                 <Typography variant="h4" gutterBottom>
@@ -62,8 +137,66 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout }) => {
                 <Typography variant="body1" color="textSecondary">
                   {user.email}
                 </Typography>
+                <Button
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                  onClick={handleOpenAvatarDialog}
+                >
+                  Changer la photo de profil
+                </Button>
               </Box>
             </Grid>
+
+            {/* Dialog de sélection d'avatar */}
+            <Dialog open={avatarDialogOpen} onClose={handleCloseAvatarDialog} maxWidth="sm" fullWidth>
+              <DialogTitle>
+                Choisir un sprite de Pokémon
+                <IconButton
+                  aria-label="close"
+                  onClick={handleCloseAvatarDialog}
+                  sx={{ position: 'absolute', right: 8, top: 8 }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Rechercher un Pokémon..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
+                  {filteredPokemon.map((poke) => (
+                    <Avatar
+                      key={poke.id + (poke.isShiny ? '-shiny' : '')}
+                      src={poke.image}
+                      alt={poke.name}
+                      sx={{
+                        width: 56,
+                        height: 56,
+                        border: tempSelected === poke.image ? '3px solid #FFCB05' : '2px solid transparent',
+                        cursor: 'pointer',
+                        transition: 'border 0.2s',
+                      }}
+                      onClick={() => setTempSelected(poke.image)}
+                    />
+                  ))}
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    disabled={!tempSelected}
+                    onClick={() => tempSelected && handleAvatarChange(tempSelected)}
+                  >
+                    Choisir
+                  </Button>
+                </Box>
+              </DialogContent>
+            </Dialog>
 
             <Grid item xs={12}>
               <Divider />
@@ -89,7 +222,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onLogout }) => {
                 <ListItem>
                   <ListItemText
                     primary="Pokémon capturés"
-                    secondary={`${user.pokemon_count || 0} Pokémon`}
+                    secondary={`${pokemonCount} Pokémon`}
                   />
                 </ListItem>
               </List>
