@@ -4,7 +4,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRouter from './routes/auth';
 import pokemonRouter from './routes/pokemon';
+import matchmakingRoutes from './routes/matchmaking';
 import MatchmakingService from './services/MatchmakingService';
+import { initializeDatabase } from './routes/pokemon';
 
 // Configuration
 dotenv.config();
@@ -32,6 +34,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/pokemon', pokemonRouter);
+app.use('/api/matchmaking', matchmakingRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -40,6 +43,9 @@ app.get('/api/health', (req, res) => {
 
 // Initialiser le service de matchmaking
 new MatchmakingService(server);
+
+// Initialiser la base de données
+initializeDatabase().catch(console.error);
 
 // Error handling
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

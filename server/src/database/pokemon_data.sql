@@ -161,42 +161,14 @@ UPDATE pokemon SET
     sprite_url = CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', id, '.png'),
     sprite_shiny_url = CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/', id, '.png');
 
--- Créer une table temporaire pour les types
-CREATE TEMPORARY TABLE temp_types AS
-SELECT 
-    id as pokemon_id,
-    SUBSTRING_INDEX(type, ',', 1) as primary_type,
-    CASE 
-        WHEN type LIKE '%,%' THEN SUBSTRING_INDEX(type, ',', -1)
-        ELSE NULL
-    END as secondary_type
-FROM pokemon;
-
--- Mettre à jour la table pokemon avec les types séparés
-ALTER TABLE pokemon 
-ADD COLUMN primary_type VARCHAR(50),
-ADD COLUMN secondary_type VARCHAR(50);
-
-UPDATE pokemon p
-JOIN temp_types t ON p.id = t.pokemon_id
-SET 
-    p.primary_type = TRIM(t.primary_type),
-    p.secondary_type = TRIM(t.secondary_type);
-
--- Supprimer la colonne type originale
-ALTER TABLE pokemon DROP COLUMN type;
-
--- Supprimer la table temporaire
-DROP TEMPORARY TABLE IF EXISTS temp_types;
-
 -- Ajouter les relations avec les types
 INSERT INTO pokemon_types (pokemon_id, type_id, is_primary)
 SELECT p.id, t.id, true
 FROM pokemon p
-JOIN types t ON t.name = TRIM(SUBSTRING_INDEX(p.primary_type, ',', 1));
+JOIN types t ON t.name = TRIM(SUBSTRING_INDEX(p.type, ',', 1));
 
 INSERT INTO pokemon_types (pokemon_id, type_id, is_primary)
 SELECT p.id, t.id, false
 FROM pokemon p
-JOIN types t ON t.name = TRIM(SUBSTRING_INDEX(p.secondary_type, ',', -1))
-WHERE p.secondary_type LIKE '%,%';
+JOIN types t ON t.name = TRIM(SUBSTRING_INDEX(p.type, ',', -1))
+WHERE p.type LIKE '%,%';

@@ -107,7 +107,7 @@ router.post('/catch/:pokemonId', authenticateToken, async (req: AuthRequest, res
 });
 
 // Vérifier et créer les tables nécessaires si elles n'existent pas
-const initializeDatabase = async () => {
+export const initializeDatabase = async () => {
   try {
     // Créer la table pokemon si elle n'existe pas
     await pool.query(`
@@ -115,7 +115,10 @@ const initializeDatabase = async () => {
         id INT PRIMARY KEY,
         name VARCHAR(50) NOT NULL,
         type VARCHAR(50) NOT NULL,
-        catch_rate INT DEFAULT 50
+        catch_rate INT DEFAULT 50,
+        rarity INT DEFAULT 1 CHECK (rarity BETWEEN 1 AND 4),
+        sprite_url VARCHAR(255),
+        sprite_shiny_url VARCHAR(255)
       )
     `);
     console.log('Table pokemon vérifiée/créée avec succès');
@@ -126,13 +129,21 @@ const initializeDatabase = async () => {
     if (existingPokemonRows[0].count === 0) {
       // Insérer les starters
       await pool.query(`
-        INSERT INTO pokemon (id, name, type, catch_rate) VALUES
-        (1, 'Bulbizarre', 'Plante, Poison', 45),
-        (4, 'Salamèche', 'Feu', 45),
-        (7, 'Carapuce', 'Eau', 45)
+        INSERT INTO pokemon (id, name, type, catch_rate, rarity) VALUES
+        (1, 'Bulbizarre', 'Plante, Poison', 45, 1),
+        (4, 'Salamèche', 'Feu', 45, 1),
+        (7, 'Carapuce', 'Eau', 45, 1)
       `);
       console.log('Starters ajoutés avec succès');
     }
+
+    // Mettre à jour les URLs des sprites
+    await pool.query(`
+      UPDATE pokemon 
+      SET sprite_url = CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', id, '.png'),
+          sprite_shiny_url = CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/', id, '.png')
+      WHERE sprite_url IS NULL OR sprite_shiny_url IS NULL
+    `);
 
     // Créer la table user_pokemon si elle n'existe pas
     await pool.query(`
@@ -144,11 +155,26 @@ const initializeDatabase = async () => {
         hp INT DEFAULT 50,
         max_hp INT DEFAULT 50,
         is_starter BOOLEAN DEFAULT FALSE,
+        is_shiny BOOLEAN DEFAULT FALSE,
+        rarity INT DEFAULT 1,
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (pokemon_id) REFERENCES pokemon(id)
       )
     `);
     console.log('Table user_pokemon vérifiée/créée avec succès');
+
+    // Créer la table team_pokemon si elle n'existe pas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS team_pokemon (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        pokemon_id INT NOT NULL,
+        slot INT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (pokemon_id) REFERENCES pokemon(id)
+      )
+    `);
+    console.log('Table team_pokemon vérifiée/créée avec succès');
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de la base de données:', error);
   }
@@ -251,19 +277,24 @@ router.get('/owned', authenticateToken, async (req: AuthRequest, res) => {
         up.is_starter as isStarter,
         up.is_shiny as isShiny,
         up.rarity,
-        CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', 
-          CASE WHEN up.is_shiny THEN 'shiny/' ELSE '' END,
-          p.id, '.png'
-        ) as image
+        CASE 
+          WHEN up.is_shiny THEN p.sprite_shiny_url
+          ELSE p.sprite_url
+        END as image
       FROM user_pokemon up
       JOIN pokemon p ON up.pokemon_id = p.id
       WHERE up.user_id = ?
     `, [userId]);
 
-    res.json(pokemon);
+    const formattedPokemon = (pokemon as any[]).map(p => ({
+      ...p,
+      type: p.type.split(',').map((t: string) => t.trim())
+    }));
+
+    res.json(formattedPokemon);
   } catch (error) {
     console.error('Error fetching owned Pokemon:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -375,10 +406,8 @@ router.get('/team', authenticateToken, async (req: AuthRequest, res) => {
         up.is_shiny as isShiny,
         up.rarity,
         tp.slot,
-        CASE 
-          WHEN up.is_shiny THEN p.sprite_shiny_url
-          ELSE p.sprite_url
-        END as sprite_url
+        p.sprite_url,
+        p.sprite_shiny_url
       FROM team_pokemon tp
       JOIN user_pokemon up ON tp.pokemon_id = up.pokemon_id AND tp.user_id = up.user_id
       JOIN pokemon p ON up.pokemon_id = p.id
@@ -392,10 +421,10 @@ router.get('/team', authenticateToken, async (req: AuthRequest, res) => {
     // Remplir les slots avec les Pokémon existants
     (pokemon as any[]).forEach((p: any) => {
       if (p.slot >= 0 && p.slot < 6) {
-        // Convertir le type en tableau
         teamArray[p.slot] = {
           ...p,
-          type: p.type.includes(',') ? p.type.split(',').map((t: string) => t.trim()) : [p.type.trim()]
+          type: p.type.split(',').map((t: string) => t.trim()),
+          sprite_url: p.is_shiny ? p.sprite_shiny_url : p.sprite_url
         };
       }
     });
@@ -403,7 +432,7 @@ router.get('/team', authenticateToken, async (req: AuthRequest, res) => {
     res.json(teamArray);
   } catch (error) {
     console.error('Error fetching team:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -417,7 +446,7 @@ router.get('/pokedex', authenticateToken, async (req: AuthRequest, res) => {
         p.id,
         p.name,
         p.type,
-        CONCAT('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/', p.id, '.png') as image,
+        p.sprite_url as image,
         EXISTS(
           SELECT 1 
           FROM user_pokemon up 
@@ -431,13 +460,13 @@ router.get('/pokedex', authenticateToken, async (req: AuthRequest, res) => {
     // Convertir le type en tableau
     const formattedPokemon = Array.isArray(pokedexRows) ? pokedexRows.map((p: any) => ({
       ...p,
-      type: [p.type]
+      type: p.type.split(',').map((t: string) => t.trim())
     })) : [];
 
     res.json(formattedPokemon);
   } catch (error) {
     console.error('Error fetching Pokédex:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -576,18 +605,18 @@ router.get('/moves/:pokemonId', authenticateToken, async (req, res) => {
 });
 
 // Route pour récupérer les attaques apprises par un Pokémon possédé
-router.get('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
+router.get('/owned/:pokemonId/moves', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { pokemonId } = req.params;
-    const { userId } = req.user;
+    const userId = req.user!.id;
 
     // Vérifier que le Pokémon appartient bien à l'utilisateur
-    const ownershipCheck = await pool.query(
-      'SELECT id FROM user_pokemon WHERE id = $1 AND user_id = $2',
+    const [ownershipCheck] = await pool.query(
+      'SELECT id FROM user_pokemon WHERE id = ? AND user_id = ?',
       [pokemonId, userId]
     );
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!ownershipCheck || (ownershipCheck as RowDataPacket[]).length === 0) {
       return res.status(403).json({ error: 'Ce Pokémon ne vous appartient pas' });
     }
 
@@ -597,10 +626,10 @@ router.get('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
       FROM moves m
       JOIN pokemon_moves pm ON m.id = pm.move_id
       JOIN types t ON m.type_id = t.id
-      WHERE pm.pokemon_id = $1
+      WHERE pm.pokemon_id = ?
       ORDER BY pm.slot ASC
     `;
-    const { rows } = await pool.query(query, [pokemonId]);
+    const [rows] = await pool.query(query, [pokemonId]);
     res.json(rows);
   } catch (error) {
     console.error('Erreur lors de la récupération des attaques:', error);
@@ -609,106 +638,106 @@ router.get('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
 });
 
 // Route pour ajouter une attaque à un Pokémon possédé
-router.post('/owned/:pokemonId/moves', authenticateToken, async (req, res) => {
-  const client = await pool.connect();
+router.post('/owned/:pokemonId/moves', authenticateToken, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
   try {
     const { pokemonId } = req.params;
     const { moveId, slot } = req.body;
-    const { userId } = req.user;
+    const userId = req.user!.id;
 
-    await client.query('BEGIN');
+    await connection.beginTransaction();
 
     // Vérifier que le Pokémon appartient à l'utilisateur
-    const ownershipCheck = await client.query(
-      'SELECT id FROM user_pokemon WHERE id = $1 AND user_id = $2',
+    const [ownershipCheck] = await connection.query(
+      'SELECT id FROM user_pokemon WHERE id = ? AND user_id = ?',
       [pokemonId, userId]
     );
 
-    if (ownershipCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+    if (!ownershipCheck || (ownershipCheck as RowDataPacket[]).length === 0) {
+      await connection.rollback();
       return res.status(403).json({ error: 'Ce Pokémon ne vous appartient pas' });
     }
 
     // Vérifier que le Pokémon peut apprendre cette attaque
-    const moveCheck = await client.query(
-      'SELECT 1 FROM pokemon_learnable_moves WHERE pokemon_id = $1 AND move_id = $2',
+    const [moveCheck] = await connection.query(
+      'SELECT 1 FROM pokemon_learnable_moves WHERE pokemon_id = ? AND move_id = ?',
       [pokemonId, moveId]
     );
 
-    if (moveCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+    if (!moveCheck || (moveCheck as RowDataPacket[]).length === 0) {
+      await connection.rollback();
       return res.status(400).json({ error: 'Ce Pokémon ne peut pas apprendre cette attaque' });
     }
 
     // Vérifier si le slot est déjà occupé
     if (slot !== undefined) {
-      const slotCheck = await client.query(
-        'SELECT 1 FROM pokemon_moves WHERE pokemon_id = $1 AND slot = $2',
+      const [slotCheck] = await connection.query(
+        'SELECT 1 FROM pokemon_moves WHERE pokemon_id = ? AND slot = ?',
         [pokemonId, slot]
       );
 
-      if (slotCheck.rows.length > 0) {
-        await client.query('ROLLBACK');
+      if (slotCheck && (slotCheck as RowDataPacket[]).length > 0) {
+        await connection.rollback();
         return res.status(400).json({ error: 'Ce slot est déjà occupé' });
       }
     }
 
     // Ajouter l'attaque
-    const result = await client.query(
-      'INSERT INTO pokemon_moves (pokemon_id, move_id, slot) VALUES ($1, $2, $3) RETURNING *',
+    const [result] = await connection.query(
+      'INSERT INTO pokemon_moves (pokemon_id, move_id, slot) VALUES (?, ?, ?) RETURNING *',
       [pokemonId, moveId, slot]
     );
 
-    await client.query('COMMIT');
-    res.json(result.rows[0]);
+    await connection.commit();
+    res.json((result as RowDataPacket[])[0]);
   } catch (error) {
-    await client.query('ROLLBACK');
+    await connection.rollback();
     console.error('Erreur lors de l\'ajout de l\'attaque:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   } finally {
-    client.release();
+    connection.release();
   }
 });
 
 // Route pour supprimer une attaque d'un Pokémon possédé
-router.delete('/owned/:pokemonId/moves/:moveId', authenticateToken, async (req, res) => {
-  const client = await pool.connect();
+router.delete('/owned/:pokemonId/moves/:moveId', authenticateToken, async (req: AuthRequest, res) => {
+  const connection = await pool.getConnection();
   try {
     const { pokemonId, moveId } = req.params;
-    const { userId } = req.user;
+    const userId = req.user!.id;
 
-    await client.query('BEGIN');
+    await connection.beginTransaction();
 
     // Vérifier que le Pokémon appartient à l'utilisateur
-    const ownershipCheck = await client.query(
-      'SELECT id FROM user_pokemon WHERE id = $1 AND user_id = $2',
+    const [ownershipCheck] = await connection.query(
+      'SELECT id FROM user_pokemon WHERE id = ? AND user_id = ?',
       [pokemonId, userId]
     );
 
-    if (ownershipCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+    if (!ownershipCheck || (ownershipCheck as RowDataPacket[]).length === 0) {
+      await connection.rollback();
       return res.status(403).json({ error: 'Ce Pokémon ne vous appartient pas' });
     }
 
     // Supprimer l'attaque
-    const result = await client.query(
-      'DELETE FROM pokemon_moves WHERE pokemon_id = $1 AND move_id = $2 RETURNING *',
+    const [result] = await connection.query(
+      'DELETE FROM pokemon_moves WHERE pokemon_id = ? AND move_id = ? RETURNING *',
       [pokemonId, moveId]
     );
 
-    if (result.rows.length === 0) {
-      await client.query('ROLLBACK');
+    if (!result || (result as RowDataPacket[]).length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: 'Attaque non trouvée' });
     }
 
-    await client.query('COMMIT');
+    await connection.commit();
     res.json({ message: 'Attaque supprimée avec succès' });
   } catch (error) {
-    await client.query('ROLLBACK');
+    await connection.rollback();
     console.error('Erreur lors de la suppression de l\'attaque:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   } finally {
-    client.release();
+    connection.release();
   }
 });
 

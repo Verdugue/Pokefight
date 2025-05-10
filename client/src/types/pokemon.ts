@@ -12,6 +12,7 @@ export interface Pokemon {
   rarity?: number;
   isShiny?: boolean;
   slot?: number;
+  isCaught?: boolean;
 }
 
 export interface Move {
