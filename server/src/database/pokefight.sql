@@ -3,11 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : sam. 10 mai 2025 à 14:38
+-- Généré le : dim. 11 mai 2025 à 13:59
 -- Version du serveur : 8.4.0
 -- Version de PHP : 8.2.18
-
-USE pokefight;
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -22,7 +20,7 @@ SET time_zone = "+00:00";
 --
 -- Base de données : `pokefight`
 --
-SELECT * FROM pokemon_moves WHERE pokemon_id = <user_pokemon_id_de_noeunoeuf>;
+
 -- --------------------------------------------------------
 
 --
@@ -115,22 +113,20 @@ CREATE TABLE IF NOT EXISTS `matches` (
   `winner_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `current_player_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `player1_id` (`player1_id`),
   KEY `player2_id` (`player2_id`),
   KEY `winner_id` (`winner_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `matches`
 --
 
-INSERT INTO `matches` (`id`, `player1_id`, `player2_id`, `status`, `winner_id`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 'in_progress', NULL, '2025-05-10 13:42:31', '2025-05-10 13:42:31'),
-(2, 2, 1, 'in_progress', NULL, '2025-05-10 13:54:33', '2025-05-10 13:54:33'),
-(3, 1, 2, 'in_progress', NULL, '2025-05-10 13:59:22', '2025-05-10 13:59:22'),
-(4, 2, 1, 'in_progress', NULL, '2025-05-10 14:00:21', '2025-05-10 14:00:21'),
-(5, 2, 1, 'in_progress', NULL, '2025-05-10 14:02:56', '2025-05-10 14:02:56');
+INSERT INTO `matches` (`id`, `player1_id`, `player2_id`, `status`, `winner_id`, `created_at`, `updated_at`, `current_player_id`) VALUES
+(31, 2, 1, 'in_progress', NULL, '2025-05-11 13:55:39', '2025-05-11 13:55:39', NULL),
+(32, 1, 2, 'in_progress', NULL, '2025-05-11 13:56:21', '2025-05-11 13:56:21', NULL);
 
 -- --------------------------------------------------------
 
@@ -172,27 +168,39 @@ CREATE TABLE IF NOT EXISTS `match_pokemon` (
   `is_active` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `user_pokemon_id` int DEFAULT NULL,
+  `is_alive` tinyint(1) DEFAULT '1',
+  `slot` int DEFAULT '0',
+  `max_hp` int NOT NULL DEFAULT '50',
+  `level` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `match_id` (`match_id`),
   KEY `user_id` (`user_id`),
   KEY `pokemon_id` (`pokemon_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `match_pokemon`
 --
 
-INSERT INTO `match_pokemon` (`id`, `match_id`, `user_id`, `pokemon_id`, `current_hp`, `is_active`, `created_at`, `user_pokemon_id`) VALUES
-(1, 1, 1, 90, 50, 0, '2025-05-10 13:42:31', NULL),
-(2, 1, 2, 102, 50, 0, '2025-05-10 13:42:31', NULL),
-(3, 2, 2, 102, 50, 0, '2025-05-10 13:54:33', NULL),
-(4, 2, 1, 90, 50, 0, '2025-05-10 13:54:33', NULL),
-(5, 3, 1, 90, 50, 0, '2025-05-10 13:59:22', NULL),
-(6, 3, 2, 102, 50, 0, '2025-05-10 13:59:22', NULL),
-(7, 4, 2, 102, 50, 0, '2025-05-10 14:00:21', NULL),
-(8, 4, 1, 90, 50, 0, '2025-05-10 14:00:21', NULL),
-(9, 5, 2, 102, 50, 0, '2025-05-10 14:02:56', NULL),
-(10, 5, 1, 90, 50, 0, '2025-05-10 14:02:56', NULL);
+INSERT INTO `match_pokemon` (`id`, `match_id`, `user_id`, `pokemon_id`, `current_hp`, `is_active`, `created_at`, `user_pokemon_id`, `is_alive`, `slot`, `max_hp`, `level`) VALUES
+(69, 31, 2, 102, 50, 0, '2025-05-11 13:55:39', 2, 1, 0, 50, 1),
+(70, 31, 2, 104, 50, 0, '2025-05-11 13:55:39', 3, 1, 0, 50, 1),
+(71, 31, 2, 58, 50, 0, '2025-05-11 13:55:39', 5, 1, 0, 50, 1),
+(72, 31, 2, 69, 50, 0, '2025-05-11 13:55:39', 6, 1, 0, 50, 1),
+(73, 31, 2, 108, 50, 0, '2025-05-11 13:55:39', 8, 1, 0, 50, 1),
+(74, 31, 1, 90, 50, 0, '2025-05-11 13:55:39', 1, 1, 0, 50, 1),
+(75, 31, 1, 29, 50, 0, '2025-05-11 13:55:39', 4, 1, 0, 50, 1),
+(76, 31, 1, 7, 50, 0, '2025-05-11 13:55:39', 7, 1, 0, 50, 1),
+(77, 31, 1, 98, 50, 0, '2025-05-11 13:55:39', 9, 1, 0, 50, 1),
+(78, 32, 1, 90, 50, 0, '2025-05-11 13:56:21', 1, 1, 0, 50, 1),
+(79, 32, 1, 29, 50, 0, '2025-05-11 13:56:21', 4, 1, 0, 50, 1),
+(80, 32, 1, 7, 50, 0, '2025-05-11 13:56:21', 7, 1, 0, 50, 1),
+(81, 32, 1, 98, 50, 0, '2025-05-11 13:56:21', 9, 1, 0, 50, 1),
+(82, 32, 2, 102, 50, 0, '2025-05-11 13:56:21', 2, 1, 0, 50, 1),
+(83, 32, 2, 104, 50, 0, '2025-05-11 13:56:21', 3, 1, 0, 50, 1),
+(84, 32, 2, 58, 50, 0, '2025-05-11 13:56:21', 5, 1, 0, 50, 1),
+(85, 32, 2, 69, 50, 0, '2025-05-11 13:56:21', 6, 1, 0, 50, 1),
+(86, 32, 2, 108, 50, 0, '2025-05-11 13:56:21', 8, 1, 0, 50, 1);
 
 -- --------------------------------------------------------
 
@@ -282,165 +290,166 @@ CREATE TABLE IF NOT EXISTS `pokemon` (
   `rarity` int DEFAULT '1',
   `sprite_url` varchar(255) DEFAULT NULL,
   `sprite_shiny_url` varchar(255) DEFAULT NULL,
+  `speed` int DEFAULT '50',
   PRIMARY KEY (`id`)
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `pokemon`
 --
 
-INSERT INTO `pokemon` (`id`, `name`, `type`, `catch_rate`, `rarity`, `sprite_url`, `sprite_shiny_url`) VALUES
-(1, 'Bulbizarre', 'Plante', 45, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/1.png'),
-(2, 'Herbizarre', 'Plante', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/2.png'),
-(3, 'Florizarre', 'Plante', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/3.png'),
-(4, 'Salamèche', 'Feu', 45, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/4.png'),
-(5, 'Reptincel', 'Feu', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/5.png'),
-(6, 'Dracaufeu', 'Feu,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/6.png'),
-(7, 'Carapuce', 'Eau', 45, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/7.png'),
-(8, 'Carabaffe', 'Eau', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/8.png'),
-(9, 'Tortank', 'Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/9.png'),
-(10, 'Chenipan', 'Insecte', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/10.png'),
-(11, 'Chrysacier', 'Insecte', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/11.png'),
-(12, 'Papilusion', 'Insecte,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/12.png'),
-(13, 'Aspicot', 'Insecte,Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/13.png'),
-(14, 'Coconfort', 'Insecte,Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/14.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/14.png'),
-(15, 'Dardargnan', 'Insecte,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/15.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/15.png'),
-(16, 'Roucool', 'Normal,Vol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/16.png'),
-(17, 'Roucoups', 'Normal,Vol', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/17.png'),
-(18, 'Roucarnage', 'Normal,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/18.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/18.png'),
-(19, 'Rattata', 'Normal', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/19.png'),
-(20, 'Rattatac', 'Normal', 127, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/20.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/20.png'),
-(21, 'Piafabec', 'Normal,Vol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/21.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/21.png'),
-(22, 'Rapasdepic', 'Normal,Vol', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/22.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/22.png'),
-(23, 'Abo', 'Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/23.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/23.png'),
-(24, 'Arbok', 'Poison', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/24.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/24.png'),
-(25, 'Pikachu', 'Électrik', 190, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/25.png'),
-(26, 'Raichu', 'Électrik', 75, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/26.png'),
-(27, 'Sabelette', 'Sol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/27.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/27.png'),
-(28, 'Sablaireau', 'Sol', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/28.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/28.png'),
-(29, 'Nidoran♀', 'Poison', 235, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/29.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/29.png'),
-(30, 'Nidorina', 'Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/30.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/30.png'),
-(31, 'Nidoqueen', 'Poison,Sol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/31.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/31.png'),
-(32, 'Nidoran♂', 'Poison', 235, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/32.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/32.png'),
-(33, 'Nidorino', 'Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/33.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/33.png'),
-(34, 'Nidoking', 'Poison,Sol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/34.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/34.png'),
-(35, 'Mélofée', 'Fée', 150, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/35.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/35.png'),
-(36, 'Mélodelfe', 'Fée', 25, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/36.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/36.png'),
-(37, 'Goupix', 'Feu', 190, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/37.png'),
-(38, 'Feunard', 'Feu', 75, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/38.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/38.png'),
-(39, 'Rondoudou', 'Normal,Fée', 170, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/39.png'),
-(40, 'Grodoudou', 'Normal,Fée', 50, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/40.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/40.png'),
-(41, 'Nosferapti', 'Poison,Vol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/41.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/41.png'),
-(42, 'Nosferalto', 'Poison,Vol', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/42.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/42.png'),
-(43, 'Mystherbe', 'Plante,Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/43.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/43.png'),
-(44, 'Ortide', 'Plante,Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/44.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/44.png'),
-(45, 'Rafflesia', 'Plante,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/45.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/45.png'),
-(46, 'Paras', 'Insecte,Plante', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/46.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/46.png'),
-(47, 'Parasect', 'Insecte,Plante', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/47.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/47.png'),
-(48, 'Mimitoss', 'Insecte,Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/48.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/48.png'),
-(49, 'Aéromite', 'Insecte,Poison', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/49.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/49.png'),
-(50, 'Taupiqueur', 'Sol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/50.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/50.png'),
-(51, 'Triopikeur', 'Sol', 50, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/51.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/51.png'),
-(52, 'Miaouss', 'Normal', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/52.png'),
-(53, 'Persian', 'Normal', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/53.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/53.png'),
-(54, 'Psykokwak', 'Eau', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/54.png'),
-(55, 'Akwakwak', 'Eau', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/55.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/55.png'),
-(56, 'Férosinge', 'Combat', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/56.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/56.png'),
-(57, 'Colossinge', 'Combat', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/57.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/57.png'),
-(58, 'Caninos', 'Feu', 190, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/58.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/58.png'),
-(59, 'Arcanin', 'Feu', 75, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/59.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/59.png'),
-(60, 'Ptitard', 'Eau', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/60.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/60.png'),
-(61, 'Têtarte', 'Eau', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/61.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/61.png'),
-(62, 'Tartard', 'Eau,Combat', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/62.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/62.png'),
-(63, 'Abra', 'Psy', 200, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/63.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/63.png'),
-(64, 'Kadabra', 'Psy', 100, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/64.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/64.png'),
-(65, 'Alakazam', 'Psy', 50, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/65.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/65.png'),
-(66, 'Machoc', 'Combat', 180, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/66.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/66.png'),
-(67, 'Machopeur', 'Combat', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/67.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/67.png'),
-(68, 'Mackogneur', 'Combat', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/68.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/68.png'),
-(69, 'Chétiflor', 'Plante,Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/69.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/69.png'),
-(70, 'Boustiflor', 'Plante,Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/70.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/70.png'),
-(71, 'Empiflor', 'Plante,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/71.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/71.png'),
-(72, 'Tentacool', 'Eau,Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/72.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/72.png'),
-(73, 'Tentacruel', 'Eau,Poison', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/73.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/73.png'),
-(74, 'Racaillou', 'Roche,Sol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/74.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/74.png'),
-(75, 'Gravalanch', 'Roche,Sol', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/75.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/75.png'),
-(76, 'Grolem', 'Roche,Sol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/76.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/76.png'),
-(77, 'Ponyta', 'Feu', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/77.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/77.png'),
-(78, 'Galopa', 'Feu', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/78.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/78.png'),
-(79, 'Ramoloss', 'Eau,Psy', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/79.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/79.png'),
-(80, 'Flagadoss', 'Eau,Psy', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/80.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/80.png'),
-(81, 'Magnéti', 'Électrik,Acier', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/81.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/81.png'),
-(82, 'Magnéton', 'Électrik,Acier', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/82.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/82.png'),
-(83, 'Canarticho', 'Normal,Vol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/83.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/83.png'),
-(84, 'Doduo', 'Normal,Vol', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/84.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/84.png'),
-(85, 'Dodrio', 'Normal,Vol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/85.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/85.png'),
-(86, 'Otaria', 'Eau', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/86.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/86.png'),
-(87, 'Lamantine', 'Eau,Glace', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/87.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/87.png'),
-(88, 'Tadmorv', 'Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/88.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/88.png'),
-(89, 'Grotadmorv', 'Poison', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/89.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/89.png'),
-(90, 'Kokiyas', 'Eau', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/90.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/90.png'),
-(91, 'Crustabri', 'Eau,Glace', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/91.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/91.png'),
-(92, 'Fantominus', 'Spectre,Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/92.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/92.png'),
-(93, 'Spectrum', 'Spectre,Poison', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/93.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/93.png'),
-(94, 'Ectoplasma', 'Spectre,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/94.png'),
-(95, 'Onix', 'Roche,Sol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/95.png'),
-(96, 'Soporifik', 'Psy', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/96.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/96.png'),
-(97, 'Hypnomade', 'Psy', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/97.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/97.png'),
-(98, 'Krabby', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/98.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/98.png'),
-(99, 'Krabboss', 'Eau', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/99.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/99.png'),
-(100, 'Voltorbe', 'Électrik', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/100.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/100.png'),
-(101, 'Électrode', 'Électrik', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/101.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/101.png'),
-(102, 'Noeunoeuf', 'Plante,Psy', 90, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/102.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/102.png'),
-(103, 'Noadkoko', 'Plante,Psy', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/103.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/103.png'),
-(104, 'Osselait', 'Sol', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/104.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/104.png'),
-(105, 'Ossatueur', 'Sol', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/105.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/105.png'),
-(106, 'Kicklee', 'Combat', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/106.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/106.png'),
-(107, 'Tygnon', 'Combat', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/107.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/107.png'),
-(108, 'Excelangue', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/108.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/108.png'),
-(109, 'Smogo', 'Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/109.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/109.png'),
-(110, 'Smogogo', 'Poison', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/110.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/110.png'),
-(111, 'Rhinocorne', 'Sol,Roche', 120, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/111.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/111.png'),
-(112, 'Rhinoféros', 'Sol,Roche', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/112.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/112.png'),
-(113, 'Leveinard', 'Normal', 30, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/113.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/113.png'),
-(114, 'Saquedeneu', 'Plante', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/114.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/114.png'),
-(115, 'Kangourex', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/115.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/115.png'),
-(116, 'Hypotrempe', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/116.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/116.png'),
-(117, 'Hypocéan', 'Eau', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/117.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/117.png'),
-(118, 'Poissirène', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/118.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/118.png'),
-(119, 'Poissoroy', 'Eau', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/119.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/119.png'),
-(120, 'Stari', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/120.png'),
-(121, 'Staross', 'Eau,Psy', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/121.png'),
-(122, 'M. Mime', 'Psy,Fée', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/122.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/122.png'),
-(123, 'Insécateur', 'Insecte,Vol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/123.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/123.png'),
-(124, 'Lippoutou', 'Glace,Psy', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/124.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/124.png'),
-(125, 'Élektek', 'Électrik', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/125.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/125.png'),
-(126, 'Magmar', 'Feu', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/126.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/126.png'),
-(127, 'Scarabrute', 'Insecte', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/127.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/127.png'),
-(128, 'Tauros', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/128.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/128.png'),
-(129, 'Magicarpe', 'Eau', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/129.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/129.png'),
-(130, 'Léviator', 'Eau,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/130.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/130.png'),
-(131, 'Lokhlass', 'Eau,Glace', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/131.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/131.png'),
-(132, 'Métamorph', 'Normal', 35, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/132.png'),
-(133, 'Évoli', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/133.png'),
-(134, 'Aquali', 'Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/134.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/134.png'),
-(135, 'Voltali', 'Électrik', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/135.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/135.png'),
-(136, 'Pyroli', 'Feu', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/136.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/136.png'),
-(137, 'Porygon', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/137.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/137.png'),
-(138, 'Amonita', 'Roche,Eau', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/138.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/138.png'),
-(139, 'Amonistar', 'Roche,Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/139.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/139.png'),
-(140, 'Kabuto', 'Roche,Eau', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/140.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/140.png'),
-(141, 'Kabutops', 'Roche,Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/141.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/141.png'),
-(142, 'Ptéra', 'Roche,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/142.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/142.png'),
-(143, 'Ronflex', 'Normal', 25, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/143.png'),
-(144, 'Artikodin', 'Glace,Vol', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/144.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/144.png'),
-(145, 'Électhor', 'Électrik,Vol', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/145.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/145.png'),
-(146, 'Sulfura', 'Feu,Vol', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/146.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/146.png'),
-(147, 'Minidraco', 'Dragon', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/147.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/147.png'),
-(148, 'Draco', 'Dragon', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/148.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/148.png'),
-(149, 'Dracolosse', 'Dragon,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/149.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/149.png'),
-(150, 'Mewtwo', 'Psy', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/150.png'),
-(151, 'Mew', 'Psy', 45, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/151.png');
+INSERT INTO `pokemon` (`id`, `name`, `type`, `catch_rate`, `rarity`, `sprite_url`, `sprite_shiny_url`, `speed`) VALUES
+(1, 'Bulbizarre', 'Plante', 45, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/1.png', 45),
+(2, 'Herbizarre', 'Plante', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/2.png', 60),
+(3, 'Florizarre', 'Plante', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/3.png', 80),
+(4, 'Salamèche', 'Feu', 45, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/4.png', 65),
+(5, 'Reptincel', 'Feu', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/5.png', 80),
+(6, 'Dracaufeu', 'Feu,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/6.png', 100),
+(7, 'Carapuce', 'Eau', 45, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/7.png', 43),
+(8, 'Carabaffe', 'Eau', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/8.png', 58),
+(9, 'Tortank', 'Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/9.png', 78),
+(10, 'Chenipan', 'Insecte', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/10.png', 45),
+(11, 'Chrysacier', 'Insecte', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/11.png', 30),
+(12, 'Papilusion', 'Insecte,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/12.png', 70),
+(13, 'Aspicot', 'Insecte,Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/13.png', 50),
+(14, 'Coconfort', 'Insecte,Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/14.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/14.png', 35),
+(15, 'Dardargnan', 'Insecte,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/15.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/15.png', 75),
+(16, 'Roucool', 'Normal,Vol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/16.png', 56),
+(17, 'Roucoups', 'Normal,Vol', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/17.png', 71),
+(18, 'Roucarnage', 'Normal,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/18.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/18.png', 101),
+(19, 'Rattata', 'Normal', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/19.png', 72),
+(20, 'Rattatac', 'Normal', 127, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/20.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/20.png', 97),
+(21, 'Piafabec', 'Normal,Vol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/21.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/21.png', 70),
+(22, 'Rapasdepic', 'Normal,Vol', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/22.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/22.png', 100),
+(23, 'Abo', 'Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/23.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/23.png', 55),
+(24, 'Arbok', 'Poison', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/24.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/24.png', 80),
+(25, 'Pikachu', 'Électrik', 190, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/25.png', 90),
+(26, 'Raichu', 'Électrik', 75, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/26.png', 110),
+(27, 'Sabelette', 'Sol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/27.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/27.png', 40),
+(28, 'Sablaireau', 'Sol', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/28.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/28.png', 65),
+(29, 'Nidoran♀', 'Poison', 235, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/29.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/29.png', 41),
+(30, 'Nidorina', 'Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/30.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/30.png', 56),
+(31, 'Nidoqueen', 'Poison,Sol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/31.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/31.png', 76),
+(32, 'Nidoran♂', 'Poison', 235, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/32.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/32.png', 50),
+(33, 'Nidorino', 'Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/33.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/33.png', 65),
+(34, 'Nidoking', 'Poison,Sol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/34.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/34.png', 85),
+(35, 'Mélofée', 'Fée', 150, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/35.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/35.png', 35),
+(36, 'Mélodelfe', 'Fée', 25, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/36.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/36.png', 60),
+(37, 'Goupix', 'Feu', 190, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/37.png', 65),
+(38, 'Feunard', 'Feu', 75, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/38.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/38.png', 100),
+(39, 'Rondoudou', 'Normal,Fée', 170, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/39.png', 20),
+(40, 'Grodoudou', 'Normal,Fée', 50, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/40.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/40.png', 50),
+(41, 'Nosferapti', 'Poison,Vol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/41.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/41.png', 55),
+(42, 'Nosferalto', 'Poison,Vol', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/42.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/42.png', 90),
+(43, 'Mystherbe', 'Plante,Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/43.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/43.png', 30),
+(44, 'Ortide', 'Plante,Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/44.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/44.png', 40),
+(45, 'Rafflesia', 'Plante,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/45.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/45.png', 50),
+(46, 'Paras', 'Insecte,Plante', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/46.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/46.png', 25),
+(47, 'Parasect', 'Insecte,Plante', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/47.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/47.png', 30),
+(48, 'Mimitoss', 'Insecte,Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/48.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/48.png', 45),
+(49, 'Aéromite', 'Insecte,Poison', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/49.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/49.png', 90),
+(50, 'Taupiqueur', 'Sol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/50.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/50.png', 95),
+(51, 'Triopikeur', 'Sol', 50, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/51.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/51.png', 120),
+(52, 'Miaouss', 'Normal', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/52.png', 90),
+(53, 'Persian', 'Normal', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/53.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/53.png', 115),
+(54, 'Psykokwak', 'Eau', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/54.png', 55),
+(55, 'Akwakwak', 'Eau', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/55.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/55.png', 85),
+(56, 'Férosinge', 'Combat', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/56.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/56.png', 70),
+(57, 'Colossinge', 'Combat', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/57.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/57.png', 95),
+(58, 'Caninos', 'Feu', 190, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/58.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/58.png', 60),
+(59, 'Arcanin', 'Feu', 75, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/59.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/59.png', 95),
+(60, 'Ptitard', 'Eau', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/60.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/60.png', 90),
+(61, 'Têtarte', 'Eau', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/61.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/61.png', 50),
+(62, 'Tartard', 'Eau,Combat', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/62.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/62.png', 70),
+(63, 'Abra', 'Psy', 200, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/63.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/63.png', 90),
+(64, 'Kadabra', 'Psy', 100, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/64.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/64.png', 105),
+(65, 'Alakazam', 'Psy', 50, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/65.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/65.png', 120),
+(66, 'Machoc', 'Combat', 180, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/66.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/66.png', 35),
+(67, 'Machopeur', 'Combat', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/67.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/67.png', 45),
+(68, 'Mackogneur', 'Combat', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/68.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/68.png', 55),
+(69, 'Chétiflor', 'Plante,Poison', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/69.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/69.png', 40),
+(70, 'Boustiflor', 'Plante,Poison', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/70.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/70.png', 55),
+(71, 'Empiflor', 'Plante,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/71.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/71.png', 70),
+(72, 'Tentacool', 'Eau,Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/72.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/72.png', 40),
+(73, 'Tentacruel', 'Eau,Poison', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/73.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/73.png', 100),
+(74, 'Racaillou', 'Roche,Sol', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/74.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/74.png', 20),
+(75, 'Gravalanch', 'Roche,Sol', 120, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/75.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/75.png', 35),
+(76, 'Grolem', 'Roche,Sol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/76.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/76.png', 45),
+(77, 'Ponyta', 'Feu', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/77.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/77.png', 90),
+(78, 'Galopa', 'Feu', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/78.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/78.png', 110),
+(79, 'Ramoloss', 'Eau,Psy', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/79.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/79.png', 15),
+(80, 'Flagadoss', 'Eau,Psy', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/80.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/80.png', 30),
+(81, 'Magnéti', 'Électrik,Acier', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/81.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/81.png', 45),
+(82, 'Magnéton', 'Électrik,Acier', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/82.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/82.png', 70),
+(83, 'Canarticho', 'Normal,Vol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/83.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/83.png', 60),
+(84, 'Doduo', 'Normal,Vol', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/84.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/84.png', 75),
+(85, 'Dodrio', 'Normal,Vol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/85.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/85.png', 110),
+(86, 'Otaria', 'Eau', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/86.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/86.png', 45),
+(87, 'Lamantine', 'Eau,Glace', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/87.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/87.png', 70),
+(88, 'Tadmorv', 'Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/88.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/88.png', 25),
+(89, 'Grotadmorv', 'Poison', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/89.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/89.png', 50),
+(90, 'Kokiyas', 'Eau', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/90.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/90.png', 40),
+(91, 'Crustabri', 'Eau,Glace', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/91.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/91.png', 70),
+(92, 'Fantominus', 'Spectre,Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/92.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/92.png', 80),
+(93, 'Spectrum', 'Spectre,Poison', 90, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/93.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/93.png', 95),
+(94, 'Ectoplasma', 'Spectre,Poison', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/94.png', 110),
+(95, 'Onix', 'Roche,Sol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/95.png', 70),
+(96, 'Soporifik', 'Psy', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/96.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/96.png', 42),
+(97, 'Hypnomade', 'Psy', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/97.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/97.png', 67),
+(98, 'Krabby', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/98.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/98.png', 50),
+(99, 'Krabboss', 'Eau', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/99.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/99.png', 75),
+(100, 'Voltorbe', 'Électrik', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/100.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/100.png', 100),
+(101, 'Électrode', 'Électrik', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/101.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/101.png', 150),
+(102, 'Noeunoeuf', 'Plante,Psy', 90, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/102.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/102.png', 40),
+(103, 'Noadkoko', 'Plante,Psy', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/103.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/103.png', 55),
+(104, 'Osselait', 'Sol', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/104.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/104.png', 35),
+(105, 'Ossatueur', 'Sol', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/105.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/105.png', 45),
+(106, 'Kicklee', 'Combat', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/106.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/106.png', 87),
+(107, 'Tygnon', 'Combat', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/107.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/107.png', 76),
+(108, 'Excelangue', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/108.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/108.png', 30),
+(109, 'Smogo', 'Poison', 190, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/109.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/109.png', 35),
+(110, 'Smogogo', 'Poison', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/110.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/110.png', 60),
+(111, 'Rhinocorne', 'Sol,Roche', 120, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/111.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/111.png', 40),
+(112, 'Rhinoféros', 'Sol,Roche', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/112.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/112.png', 55),
+(113, 'Leveinard', 'Normal', 30, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/113.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/113.png', 50),
+(114, 'Saquedeneu', 'Plante', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/114.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/114.png', 60),
+(115, 'Kangourex', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/115.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/115.png', 110),
+(116, 'Hypotrempe', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/116.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/116.png', 60),
+(117, 'Hypocéan', 'Eau', 75, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/117.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/117.png', 115),
+(118, 'Poissirène', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/118.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/118.png', 63),
+(119, 'Poissoroy', 'Eau', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/119.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/119.png', 68),
+(120, 'Stari', 'Eau', 225, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/120.png', 85),
+(121, 'Staross', 'Eau,Psy', 60, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/121.png', 115),
+(122, 'M. Mime', 'Psy,Fée', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/122.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/122.png', 90),
+(123, 'Insécateur', 'Insecte,Vol', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/123.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/123.png', 105),
+(124, 'Lippoutou', 'Glace,Psy', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/124.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/124.png', 95),
+(125, 'Élektek', 'Électrik', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/125.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/125.png', 105),
+(126, 'Magmar', 'Feu', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/126.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/126.png', 93),
+(127, 'Scarabrute', 'Insecte', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/127.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/127.png', 85),
+(128, 'Tauros', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/128.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/128.png', 110),
+(129, 'Magicarpe', 'Eau', 255, 1, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/129.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/129.png', 80),
+(130, 'Léviator', 'Eau,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/130.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/130.png', 81),
+(131, 'Lokhlass', 'Eau,Glace', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/131.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/131.png', 60),
+(132, 'Métamorph', 'Normal', 35, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/132.png', 48),
+(133, 'Évoli', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/133.png', 55),
+(134, 'Aquali', 'Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/134.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/134.png', 65),
+(135, 'Voltali', 'Électrik', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/135.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/135.png', 130),
+(136, 'Pyroli', 'Feu', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/136.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/136.png', 65),
+(137, 'Porygon', 'Normal', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/137.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/137.png', 40),
+(138, 'Amonita', 'Roche,Eau', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/138.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/138.png', 35),
+(139, 'Amonistar', 'Roche,Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/139.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/139.png', 55),
+(140, 'Kabuto', 'Roche,Eau', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/140.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/140.png', 55),
+(141, 'Kabutops', 'Roche,Eau', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/141.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/141.png', 80),
+(142, 'Ptéra', 'Roche,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/142.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/142.png', 130),
+(143, 'Ronflex', 'Normal', 25, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/143.png', 30),
+(144, 'Artikodin', 'Glace,Vol', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/144.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/144.png', 85),
+(145, 'Électhor', 'Électrik,Vol', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/145.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/145.png', 100),
+(146, 'Sulfura', 'Feu,Vol', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/146.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/146.png', 90),
+(147, 'Minidraco', 'Dragon', 45, 2, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/147.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/147.png', 50),
+(148, 'Draco', 'Dragon', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/148.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/148.png', 70),
+(149, 'Dracolosse', 'Dragon,Vol', 45, 3, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/149.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/149.png', 80),
+(150, 'Mewtwo', 'Psy', 3, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/150.png', 130),
+(151, 'Mew', 'Psy', 45, 4, 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png', 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/151.png', 100);
 
 -- --------------------------------------------------------
 
@@ -928,7 +937,26 @@ CREATE TABLE IF NOT EXISTS `pokemon_moves` (
   `slot` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_pokemon_moves_pokemon_id` (`pokemon_id`)
-) ;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Déchargement des données de la table `pokemon_moves`
+--
+
+INSERT INTO `pokemon_moves` (`id`, `pokemon_id`, `move_id`, `pp_ups`, `slot`) VALUES
+(1, 1, 1, 0, 0),
+(2, 1, 13, 0, 1),
+(3, 2, 5, 0, 0),
+(4, 3, 1, 0, 0),
+(5, 3, 29, 0, 1),
+(8, 4, 1, 0, 0),
+(9, 4, 23, 0, 1),
+(10, 5, 1, 0, 0),
+(11, 5, 9, 0, 1),
+(12, 5, 35, 0, 2),
+(13, 5, 36, 0, 3),
+(14, 7, 1, 0, 0),
+(15, 7, 13, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -1182,7 +1210,7 @@ CREATE TABLE IF NOT EXISTS `team_pokemon` (
   UNIQUE KEY `unique_user_slot` (`user_id`,`slot`),
   UNIQUE KEY `unique_user_pokemon` (`user_id`,`pokemon_id`),
   KEY `pokemon_id` (`pokemon_id`)
-) ;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `team_pokemon`
@@ -1190,7 +1218,14 @@ CREATE TABLE IF NOT EXISTS `team_pokemon` (
 
 INSERT INTO `team_pokemon` (`id`, `user_id`, `pokemon_id`, `slot`) VALUES
 (1, 1, 90, 0),
-(2, 2, 102, 0);
+(2, 2, 102, 0),
+(3, 1, 7, 1),
+(4, 1, 29, 2),
+(5, 1, 98, 3),
+(6, 2, 58, 1),
+(7, 2, 108, 2),
+(8, 2, 69, 4),
+(9, 2, 104, 3);
 
 -- --------------------------------------------------------
 
@@ -1259,8 +1294,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `avatar`, `created_at`, `last_login`, `elo_rating`, `wins`, `losses`) VALUES
-(1, 'per', 'per@gmail.com', '$2b$10$YAXDwP5fNYDFyNCrGxkRiujornZsKEw4zj2qZbN.fS.MXsuK0hnOO', NULL, '2025-05-10 13:33:47', '2025-05-10 13:58:58', 1000, 0, 0),
-(2, 'player2', 'p2@gmail.com', '$2b$10$7naUN7ECtcn0nJLtDUVY8uhJ7YC0Qria6.9c3lL6heYcKW73nKcsC', NULL, '2025-05-10 13:42:16', '2025-05-10 13:59:15', 1000, 0, 0);
+(1, 'per', 'per@gmail.com', '$2b$10$YAXDwP5fNYDFyNCrGxkRiujornZsKEw4zj2qZbN.fS.MXsuK0hnOO', NULL, '2025-05-10 13:33:47', '2025-05-11 13:22:31', 1000, 0, 0),
+(2, 'player2', 'p2@gmail.com', '$2b$10$7naUN7ECtcn0nJLtDUVY8uhJ7YC0Qria6.9c3lL6heYcKW73nKcsC', NULL, '2025-05-10 13:42:16', '2025-05-11 13:52:43', 1000, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -1283,7 +1318,7 @@ CREATE TABLE IF NOT EXISTS `user_pokemon` (
   PRIMARY KEY (`id`),
   KEY `pokemon_id` (`pokemon_id`),
   KEY `idx_user_pokemon_user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `user_pokemon`
@@ -1292,7 +1327,46 @@ CREATE TABLE IF NOT EXISTS `user_pokemon` (
 INSERT INTO `user_pokemon` (`id`, `user_id`, `pokemon_id`, `level`, `hp`, `max_hp`, `is_starter`, `is_shiny`, `rarity`, `created_at`) VALUES
 (1, 1, 90, 1, 50, 50, 0, 0, 'normal', '2025-05-10 13:33:51'),
 (2, 2, 102, 1, 50, 50, 0, 0, 'normal', '2025-05-10 13:42:21'),
-(3, 2, 104, 1, 50, 50, 0, 0, 'normal', '2025-05-10 14:00:36');
+(3, 2, 104, 1, 50, 50, 0, 0, 'normal', '2025-05-10 14:00:36'),
+(4, 1, 29, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:48'),
+(5, 2, 58, 1, 50, 50, 0, 0, 'legendary', '2025-05-10 22:41:50'),
+(6, 2, 69, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:53'),
+(7, 1, 7, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:54'),
+(8, 2, 108, 1, 50, 50, 0, 0, 'legendary', '2025-05-10 22:41:58'),
+(9, 1, 98, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:59');
+
+--
+-- Déclencheurs `user_pokemon`
+--
+DROP TRIGGER IF EXISTS `after_user_pokemon_insert`;
+DELIMITER $$
+CREATE TRIGGER `after_user_pokemon_insert` AFTER INSERT ON `user_pokemon` FOR EACH ROW BEGIN
+  DECLARE done INT DEFAULT 0;
+  DECLARE moveId INT;
+  DECLARE learnLevel INT;
+  DECLARE slot INT DEFAULT 0;
+  DECLARE cur CURSOR FOR
+    SELECT move_id, learn_level
+    FROM pokemon_learnable_moves
+    WHERE pokemon_id = NEW.pokemon_id AND learn_level <= NEW.level
+    ORDER BY learn_level ASC
+    LIMIT 4;
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+  OPEN cur;
+  read_loop: LOOP
+    FETCH cur INTO moveId, learnLevel;
+    IF done THEN
+      LEAVE read_loop;
+    END IF;
+    INSERT INTO pokemon_moves (pokemon_id, move_id, slot)
+    VALUES (NEW.id, moveId, slot);
+    SET slot = slot + 1;
+  END LOOP;
+  CLOSE cur;
+END
+$$
+DELIMITER ;
 
 --
 -- Contraintes pour les tables déchargées
@@ -1383,36 +1457,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-DELIMITER $$
-
-CREATE TRIGGER after_user_pokemon_insert
-AFTER INSERT ON user_pokemon
-FOR EACH ROW
-BEGIN
-  DECLARE done INT DEFAULT 0;
-  DECLARE moveId INT;
-  DECLARE learnLevel INT;
-  DECLARE slot INT DEFAULT 0;
-  DECLARE cur CURSOR FOR
-    SELECT move_id, learn_level
-    FROM pokemon_learnable_moves
-    WHERE pokemon_id = NEW.pokemon_id AND learn_level <= NEW.level
-    ORDER BY learn_level ASC
-    LIMIT 4;
-  DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
-
-  OPEN cur;
-  read_loop: LOOP
-    FETCH cur INTO moveId, learnLevel;
-    IF done THEN
-      LEAVE read_loop;
-    END IF;
-    INSERT INTO pokemon_moves (pokemon_id, move_id, slot)
-    VALUES (NEW.id, moveId, slot);
-    SET slot = slot + 1;
-  END LOOP;
-  CLOSE cur;
-END$$
-
-DELIMITER ;
-

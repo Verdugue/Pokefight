@@ -11,6 +11,8 @@ export interface Pokemon {
   is_alive: boolean;
   sprite_url: string;
   user_pokemon_id: number;
+  slot?: number;
+  is_active?: number;
 }
 
 export interface Move {
@@ -35,6 +37,7 @@ export interface CombatState {
   selectionTimer: number;
   isCombatEnded: boolean;
   status: string;
+  isWaitingForOpponent?: boolean;
 }
 
 export interface CombatLog {
@@ -47,9 +50,6 @@ export class CombatSystem {
   private matchId: string;
   private token: string;
   private onStateChange: (state: CombatState) => void;
-  private selectionInterval: NodeJS.Timeout | null = null;
-  private retryCount: number = 0;
-  private maxRetries: number = 3;
 
   constructor(matchId: string, token: string, onStateChange: (state: CombatState) => void) {
     this.matchId = matchId;
@@ -74,186 +74,55 @@ export class CombatSystem {
 
   public async initializeCombat() {
     try {
-      console.log('Initialisation du combat...');
       const response = await fetch(`${API_URL}/api/matchmaking/match/${this.matchId}`, {
-        headers: { 
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include' // Ajout des credentials pour les cookies
+        headers: { 'Authorization': `Bearer ${this.token}` }
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const data = await response.json();
-      console.log('Données du match reçues:', data);
-      
-      if (!data.pokemon || !Array.isArray(data.pokemon)) {
-        throw new Error('Format de données invalide: pokemon manquant ou invalide');
-      }
-
-      // Initialiser les équipes
-      const playerTeamRaw = data.pokemon.filter((p: Pokemon) => p.user_id === data.current_user_id);
-      const opponentTeamRaw = data.pokemon.filter((p: Pokemon) => p.user_id !== data.current_user_id);
-
-      // Charger les attaques pour chaque Pokémon
-      const playerTeam = await Promise.all(playerTeamRaw.map(async (poke: any) => ({
-        ...poke,
-        moves: await fetchPokedexMoves(this.token, poke.pokemon_id, poke.level),
-        is_alive: true,
-        current_hp: poke.current_hp,
-        max_hp: poke.current_hp
-      })));
-      const opponentTeam = await Promise.all(opponentTeamRaw.map(async (poke: any) => ({
-        ...poke,
-        moves: await fetchPokedexMoves(this.token, poke.pokemon_id, poke.level),
-        is_alive: true,
-        current_hp: poke.current_hp,
-        max_hp: poke.current_hp
-      })));
-
-      // Met à jour le state
-      this.state.playerTeam = playerTeam;
-      this.state.opponentTeam = opponentTeam;
-
-      if (this.state.playerTeam.length === 0 || this.state.opponentTeam.length === 0) {
-        throw new Error('Équipes invalides: une ou plusieurs équipes sont vides');
-      }
-      
-      console.log('Équipes initialisées:', {
-        playerTeam: this.state.playerTeam,
-        opponentTeam: this.state.opponentTeam
-      });
-      
-      if (!this.state.isPokemonSelected) {
-        this.startSelectionTimer();
-      }
-      
+      this.state.playerPokemon = data.playerPokemon;
+      this.state.opponentPokemon = data.opponentPokemon;
+      this.state.playerTeam = data.playerTeam;
+      this.state.opponentTeam = data.opponentTeam;
+      this.state.combatLog = data.combatLog;
+      this.state.isPlayerTurn = data.isPlayerTurn;
+      this.state.isCombatEnded = data.isCombatEnded;
+      this.state.status = data.status;
       this.updateState();
-    } catch (error) {
-      console.error('Erreur lors de l\'initialisation du combat:', error);
-      
-      // Tentative de reconnexion
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        console.log(`Tentative de reconnexion ${this.retryCount}/${this.maxRetries}...`);
-        setTimeout(() => this.initializeCombat(), 2000); // Attendre 2 secondes avant de réessayer
-      } else {
-        this.addCombatLog("Erreur de connexion au serveur. Veuillez rafraîchir la page.", "#e53935");
-        this.updateState();
-      }
+    } catch (e) {
+      console.error('Erreur lors de l\'initialisation du combat', e);
     }
-  }
-
-  private startSelectionTimer() {
-    this.selectionInterval = setInterval(() => {
-      if (this.state.selectionTimer > 0) {
-        this.state.selectionTimer--;
-        this.updateState();
-      } else {
-        this.handleSelectionTimeout();
-      }
-    }, 1000);
-  }
-
-  private handleSelectionTimeout() {
-    if (this.selectionInterval) {
-      clearInterval(this.selectionInterval);
-    }
-    
-    // Si le joueur n'a pas choisi, sélectionner automatiquement le premier Pokémon
-    if (!this.state.isPokemonSelected && this.state.playerTeam.length > 0) {
-      this.selectPokemon(this.state.playerTeam[0]);
-    }
-    
-    // Si l'adversaire n'a pas choisi, sélectionner automatiquement son premier Pokémon
-    if (!this.state.isOpponentPokemonSelected && this.state.opponentTeam.length > 0) {
-      this.selectOpponentPokemon(this.state.opponentTeam[0]);
-    }
-  }
-
-  public selectPokemon(pokemon: Pokemon) {
-    if (this.state.isPokemonSelected) return;
-    
-    this.state.playerPokemon = pokemon;
-    this.state.isPokemonSelected = true;
-    this.addCombatLog(`Vous avez choisi ${pokemon.name}`, "#66bb6a");
-    
-    if (this.state.isOpponentPokemonSelected) {
-      this.startCombat();
-    }
-    
-    this.updateState();
-  }
-
-  public selectOpponentPokemon(pokemon: Pokemon) {
-    if (this.state.isOpponentPokemonSelected) return;
-    
-    this.state.opponentPokemon = pokemon;
-    this.state.isOpponentPokemonSelected = true;
-    this.addCombatLog(`L'adversaire a choisi son Pokémon`, "#e53935");
-    
-    if (this.state.isPokemonSelected) {
-      this.startCombat();
-    }
-    
-    this.updateState();
-  }
-
-  private startCombat() {
-    if (this.selectionInterval) {
-      clearInterval(this.selectionInterval);
-    }
-    
-    this.state.isCombatStarted = true;
-    this.addCombatLog(`Début du round ${this.state.round}`, "#2196F3");
-    
-    // Déterminer qui attaque en premier
-    if (this.state.playerPokemon && this.state.opponentPokemon) {
-      this.state.isPlayerTurn = this.state.playerPokemon.speed >= this.state.opponentPokemon.speed;
-    }
-    
-    this.updateState();
   }
 
   public async useMove(move: Move) {
-    if (!this.state.playerPokemon) {
-      console.error('Aucun Pokémon sélectionné pour attaquer.');
-      return;
-    }
+    if (!this.state.playerPokemon) return;
     try {
       const response = await fetch(`${API_URL}/api/matchmaking/match/${this.matchId}/move`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${this.token}`
         },
         body: JSON.stringify({
           moveId: move.id,
-          pokemonId: this.state.playerPokemon.user_pokemon_id
+          pokemonId: this.state.playerPokemon.id
         })
       });
-
       const data = await response.json();
-
       if (data.waiting) {
         // Poll toutes les 2s jusqu'à avoir le résultat du round
         const poll = async () => {
           const pollRes = await fetch(`${API_URL}/api/matchmaking/match/${this.matchId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 'Authorization': `Bearer ${this.token}` }
           });
           const pollData = await pollRes.json();
-          // Si le round est résolu (combatLog ou PV changés), on met à jour l'état
-          if (pollData && pollData.pokemon) {
-            // On peut améliorer la logique ici pour détecter le changement de round
-            this.state.playerPokemon = pollData.pokemon.find((p: any) => p.user_id === pollData.current_user_id);
-            this.state.opponentPokemon = pollData.pokemon.find((p: any) => p.user_id !== pollData.current_user_id);
-            // On ne touche pas au log ici, il sera mis à jour au prochain vrai tour
+          if (pollData && pollData.playerPokemon) {
+            this.state.playerPokemon = pollData.playerPokemon;
+            this.state.opponentPokemon = pollData.opponentPokemon;
+            this.state.combatLog = pollData.combatLog;
+            this.state.isPlayerTurn = pollData.isPlayerTurn;
+            this.state.isCombatEnded = pollData.isCombatEnded;
+            this.state.status = pollData.status;
             this.updateState();
-            // Si le combat n'est pas fini, on continue à poller
-            if (pollData.match.status !== 'finished') {
+            if (!pollData.isCombatEnded && !pollData.isPlayerTurn) {
               setTimeout(poll, 2000);
             }
           } else {
@@ -263,31 +132,17 @@ export class CombatSystem {
         poll();
         return;
       }
-
       // Mettre à jour l'état du combat
       this.state.playerPokemon = data.playerPokemon;
       this.state.opponentPokemon = data.opponentPokemon;
-      this.state.combatLog = [
-        ...this.state.combatLog,
-        ...(Array.isArray(data.combatLog) ? data.combatLog : [])
-      ];
+      this.state.combatLog = data.combatLog;
       this.state.isPlayerTurn = data.isPlayerTurn;
       this.state.isCombatEnded = data.isCombatEnded;
-
-      // Si le combat est terminé, mettre à jour le statut
-      if (this.state.isCombatEnded) {
-        this.state.status = 'ended';
-      }
-
-      // Notifier les observateurs
+      this.state.status = data.status;
       this.updateState();
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi de l\'attaque:', error);
+    } catch (e) {
+      console.error('Erreur lors de l\'attaque', e);
     }
-  }
-
-  private addCombatLog(text: string, color: string) {
-    this.state.combatLog.push({ text, color });
   }
 
   private updateState() {
@@ -295,15 +150,15 @@ export class CombatSystem {
   }
 
   public cleanup() {
-    if (this.selectionInterval) {
-      clearInterval(this.selectionInterval);
-    }
+    // Nettoyage éventuel (timers, etc.)
   }
 }
 
-async function fetchPokedexMoves(token: string, pokemonId: number, level: number) {
-  const response = await fetch(`${API_URL}/api/pokemon/moves/${pokemonId}?maxLevel=${level}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return response.ok ? await response.json() : [];
-} 
+// Utilitaire à compléter pour récupérer les attaques d'un Pokémon
+export async function fetchPokedexMoves(token: string, pokemonId: number, level: number) {
+  // À compléter selon ton API
+  return [];
+}
+
+
+

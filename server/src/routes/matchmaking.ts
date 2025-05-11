@@ -1,288 +1,290 @@
 import express from 'express';
-import { Server as SocketIOServer, Socket } from 'socket.io';
 import { pool } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { RowDataPacket } from 'mysql2';
-import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-// Map pour stocker les joueurs en attente
-const waitingPlayers = new Map<number, WaitingPlayer>();
-// Map pour stocker les connexions WebSocket des utilisateurs
-const connectedUsers = new Map<number, any>();
-const pendingMoves = new Map<number, { [userId: number]: { moveId: number, pokemonId: number } }>();
+// File d'attente en mémoire
+const waitingPlayers: { userId: number, username: string, team: any[] }[] = [];
+// Matches en cours (en mémoire pour la logique, BDD pour la persistance)
+const activeMatches: { [matchId: number]: { players: number[], choices: { [userId: number]: { moveId: number, pokemonId: number } }, logs: any[], initialActive: { [userId: number]: boolean } } } = {};
 
-// Interface pour représenter un joueur en attente
-interface WaitingPlayer {
-  userId: number;
-  username: string;
-  team: any[];
-  timestamp: number;
+// Utilitaires à compléter selon ton projet
+async function getUserTeam(userId: number) {
+  const [team] = await pool.query(
+    'SELECT * FROM user_pokemon WHERE user_id = ?',
+    [userId]
+  );
+  return team as any[];
 }
-
-// Nettoyer les joueurs qui attendent depuis trop longtemps (plus de 5 minutes)
-const cleanupWaitingPlayers = () => {
-  const now = Date.now();
-  for (const [userId, player] of waitingPlayers.entries()) {
-    if (now - player.timestamp > 5 * 60 * 1000) {
-      waitingPlayers.delete(userId);
-    }
-  }
-};
-
-// Exécuter le nettoyage toutes les minutes
-setInterval(cleanupWaitingPlayers, 60 * 1000);
-
-// Initialiser le service WebSocket
-export const initializeWebSocket = (io: SocketIOServer) => {
-  io.on('connection', (socket: Socket) => {
-    console.log('Nouvelle connexion WebSocket');
-
-    // Authentifier l'utilisateur
-    socket.on('authenticate', (token: string) => {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
-        const userId = decoded.id;
-        
-        // Stocker la connexion de l'utilisateur
-        connectedUsers.set(userId, socket);
-        
-        console.log(`Utilisateur ${userId} connecté via WebSocket`);
-      } catch (error) {
-        console.error('Erreur d\'authentification WebSocket:', error);
-      }
-    });
-
-    // Gérer la déconnexion
-    socket.on('disconnect', () => {
-      for (const [userId, userSocket] of connectedUsers.entries()) {
-        if (userSocket === socket) {
-          connectedUsers.delete(userId);
-          waitingPlayers.delete(userId);
-          console.log(`Utilisateur ${userId} déconnecté`);
-          break;
-        }
-      }
-    });
-  });
-};
+async function getPokemonMoves(userPokemonId: number, level: number) {
+  const [moves] = await pool.query(
+    `SELECT m.* FROM moves m
+     JOIN pokemon_moves pm ON m.id = pm.move_id
+     WHERE pm.pokemon_id = ?`,
+    [userPokemonId]
+  );
+  return moves as any[];
+}
 
 // Rejoindre la file d'attente
 router.post('/queue', authenticateToken, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const username = req.user!.username;
-
-  try {
-    // Vérifier si le joueur a une équipe
-    const [team] = await pool.query(
-      'SELECT * FROM team_pokemon WHERE user_id = ?',
-      [userId]
-    );
-
-    if (!team || (team as any[]).length === 0) {
+  // Récupérer l'équipe du joueur
+  const team = await getUserTeam(userId);
+  if (!team || team.length === 0) {
       return res.status(400).json({ error: 'Vous devez avoir une équipe pour combattre' });
     }
-
-    // Récupérer l'équipe du joueur
-    const [playerTeam] = await pool.query(`
-      SELECT 
-        p.id,
-        p.name,
-        p.type,
-        up.level,
-        up.hp,
-        up.max_hp,
-        up.is_starter,
-        up.is_shiny,
-        up.rarity,
-        CASE 
-          WHEN up.is_shiny THEN p.sprite_shiny_url
-          ELSE p.sprite_url
-        END as sprite_url
-      FROM team_pokemon tp
-      JOIN user_pokemon up ON tp.pokemon_id = up.pokemon_id AND tp.user_id = up.user_id
-      JOIN pokemon p ON up.pokemon_id = p.id
-      WHERE tp.user_id = ?
-      ORDER BY tp.slot
-    `, [userId]);
-
-    const player: WaitingPlayer = {
-      userId,
-      username,
-      team: playerTeam as any[],
-      timestamp: Date.now()
-    };
-
-    // Ajouter le joueur à la file d'attente seulement s'il n'y est pas déjà
-    if (!waitingPlayers.has(userId)) {
-      waitingPlayers.set(userId, player);
-    }
-
-    // Chercher un adversaire
-    const opponent = findOpponent(player);
-
-    if (opponent) {
-      console.log('Création du match entre', player.userId, 'et', opponent.userId);
-      // Créer un match
-      const matchId = await createMatch(player, opponent);
-
-      // Envoyer la réponse aux deux joueurs
-      const matchData = {
-        matchFound: true,
-        matchId,
-        opponent: {
-          username: opponent.username,
-          team: opponent.team
-        }
-      };
-
-      // Envoyer la réponse au joueur actuel
-      res.json(matchData);
-
-      // Envoyer la notification à l'adversaire via WebSocket
-      const opponentSocket = connectedUsers.get(opponent.userId);
-      if (opponentSocket) {
-        opponentSocket.emit('matchFound', {
-          matchId,
-          opponent: {
-            username: player.username,
-            team: player.team
-          }
-        });
-      }
-    } else {
-      res.json({ matchFound: false });
-    }
-  } catch (error) {
-    console.error('Error joining queue:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  // Ajouter à la file si pas déjà présent
+  if (!waitingPlayers.find(p => p.userId === userId)) {
+    waitingPlayers.push({ userId, username, team });
   }
+    // Chercher un adversaire
+  if (waitingPlayers.length >= 2) {
+    const [p1, p2] = waitingPlayers.splice(0, 2);
+    // Créer un match en BDD (à compléter)
+    const [result] = await pool.query('INSERT INTO matches (player1_id, player2_id, status) VALUES (?, ?, ?)', [p1.userId, p2.userId, 'in_progress']);
+    const matchId = (result as any).insertId;
+    // Stocker en mémoire
+    activeMatches[matchId] = { players: [p1.userId, p2.userId], choices: {}, logs: [], initialActive: { [p1.userId]: false, [p2.userId]: false } };
+    // Insérer les Pokémon de chaque joueur dans match_pokemon
+    for (const poke of p1.team) {
+      await pool.query(
+        'INSERT INTO match_pokemon (match_id, user_id, pokemon_id, current_hp, is_alive, user_pokemon_id, max_hp, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [matchId, p1.userId, poke.pokemon_id, poke.max_hp, true, poke.id, poke.max_hp, poke.level]
+      );
+    }
+    for (const poke of p2.team) {
+      await pool.query(
+        'INSERT INTO match_pokemon (match_id, user_id, pokemon_id, current_hp, is_alive, user_pokemon_id, max_hp, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [matchId, p2.userId, poke.pokemon_id, poke.max_hp, true, poke.id, poke.max_hp, poke.level]
+      );
+    }
+    return res.json({ matchFound: true, matchId });
+  }
+  res.json({ matchFound: false });
 });
 
 // Quitter la file d'attente
-router.post('/queue/leave', authenticateToken, async (req: AuthRequest, res) => {
+router.post('/queue/leave', authenticateToken, (req: AuthRequest, res) => {
   const userId = req.user!.id;
-  waitingPlayers.delete(userId);
+  const idx = waitingPlayers.findIndex(p => p.userId === userId);
+  if (idx !== -1) waitingPlayers.splice(idx, 1);
   res.json({ success: true });
 });
 
-// Trouver un adversaire
-const findOpponent = (player: WaitingPlayer): WaitingPlayer | null => {
-  for (const [id, waitingPlayer] of waitingPlayers.entries()) {
-    if (id !== player.userId) {
-      if (waitingPlayers.has(player.userId) && waitingPlayers.has(id)) {
-        waitingPlayers.delete(player.userId);
-        waitingPlayers.delete(id);
-        return waitingPlayer;
-      }
-    }
-  }
-  return null;
-};
-
-// Créer un match
-async function createMatch(player1: WaitingPlayer, player2: WaitingPlayer): Promise<number> {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // Créer le match
-    const [result] = await connection.query(
-      'INSERT INTO matches (player1_id, player2_id, status, current_player_id) VALUES (?, ?, ?, ?)',
-      [player1.userId, player2.userId, 'in_progress', player1.userId]
-    );
-
-    const matchId = (result as any).insertId;
-
-    // Récupérer les user_pokemon pour l'équipe du joueur
-    const [player1Team] = await connection.query(
-      'SELECT up.id as user_pokemon_id, up.pokemon_id FROM team_pokemon tp JOIN user_pokemon up ON tp.pokemon_id = up.pokemon_id AND tp.user_id = up.user_id WHERE tp.user_id = ?',
-      [player1.userId]
-    );
-
-    const [player2Team] = await connection.query(
-      'SELECT up.id as user_pokemon_id, up.pokemon_id FROM team_pokemon tp JOIN user_pokemon up ON tp.pokemon_id = up.pokemon_id AND tp.user_id = up.user_id WHERE tp.user_id = ?',
-      [player2.userId]
-    );
-
-    // Insérer les Pokémon dans le match
-    for (const pokemon of player1Team as any[]) {
-      await connection.query(
-        'INSERT INTO match_pokemon (match_id, user_id, pokemon_id, user_pokemon_id, current_hp) SELECT ?, ?, pokemon_id, id, max_hp FROM user_pokemon WHERE id = ?',
-        [matchId, player1.userId, pokemon.user_pokemon_id]
-      );
-    }
-
-    for (const pokemon of player2Team as any[]) {
-      await connection.query(
-        'INSERT INTO match_pokemon (match_id, user_id, pokemon_id, user_pokemon_id, current_hp) SELECT ?, ?, pokemon_id, id, max_hp FROM user_pokemon WHERE id = ?',
-        [matchId, player2.userId, pokemon.user_pokemon_id]
-      );
-    }
-
-    await connection.commit();
-    return matchId;
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
-// Obtenir l'état du match
+// Récupérer l'état du match
 router.get('/match/:matchId', authenticateToken, async (req: AuthRequest, res) => {
-  const { matchId } = req.params;
+  const matchId = Number(req.params.matchId);
   const userId = req.user!.id;
 
-  try {
-    const [match] = await pool.query(`
-      SELECT 
-        m.*,
-        u1.username as player1_username,
-        u2.username as player2_username
-      FROM matches m
-      JOIN users u1 ON m.player1_id = u1.id
-      JOIN users u2 ON m.player2_id = u2.id
-      WHERE m.id = ? AND (m.player1_id = ? OR m.player2_id = ?)
-    `, [matchId, userId, userId]);
-
-    if (!match || (match as RowDataPacket[]).length === 0) {
-      return res.status(404).json({ error: 'Match not found' });
-    }
-
-    const [pokemon] = await pool.query(`
-      SELECT 
-        mp.*,
-        p.name,
-        p.type,
-        up.id as user_pokemon_id,
-        CASE 
-          WHEN up.is_shiny THEN p.sprite_shiny_url
-          ELSE p.sprite_url
-        END as sprite_url
-      FROM match_pokemon mp
-      JOIN pokemon p ON mp.pokemon_id = p.id
-      JOIN user_pokemon up ON mp.user_pokemon_id = up.id
-      WHERE mp.match_id = ?
-    `, [matchId]);
-
-    res.json({
-      match: (match as RowDataPacket[])[0],
-      pokemon: (pokemon as any[]).map(p => ({
-        ...p,
-        type: p.type.split(',').map((t: string) => t.trim())
-      })),
-      current_user_id: userId
-    });
-  } catch (error) {
-    console.error('Error fetching match:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  // Exemple : récupération en mémoire (à adapter si tu veux persister en BDD)
+  const match = activeMatches[matchId];
+  if (!match) {
+    // Renvoie un statut spécial au lieu d'une 404
+    return res.json({ status: 'ended', isCombatEnded: true });
   }
+
+  const [pokemons] = await pool.query(
+    `SELECT mp.*, p.name, p.sprite_url, p.speed
+     FROM match_pokemon mp
+     JOIN pokemon p ON mp.pokemon_id = p.id
+     WHERE mp.match_id = ?`,
+    [matchId]
+  );
+  const pokemonsArray = pokemons as any[];
+  // Sépare les équipes par user_id
+  const playerTeam = pokemonsArray.filter((p: any) => p.user_id === userId);
+  const opponentTeam = pokemonsArray.filter((p: any) => p.user_id !== userId);
+  // Prends le Pokémon actif (is_active === 1)
+  const playerPokemon = playerTeam.find((p: any) => p.is_active === 1);
+  const opponentPokemon = opponentTeam.find((p: any) => p.is_active === 1);
+
+  // Récupère les attaques du Pokémon actif du joueur
+  if (playerPokemon) {
+    playerPokemon.moves = await getPokemonMoves(playerPokemon.user_pokemon_id, playerPokemon.level) || [];
+  }
+  // Récupère les attaques du Pokémon actif adverse
+  if (opponentPokemon) {
+    opponentPokemon.moves = await getPokemonMoves(opponentPokemon.user_pokemon_id, opponentPokemon.level) || [];
+  }
+
+  // Les deux joueurs doivent avoir choisi leur Pokémon actif pour commencer le combat
+  const bothActiveChosen = match.initialActive &&
+    playerTeam.some((p: any) => p.is_active === 1) &&
+    opponentTeam.some((p: any) => p.is_active === 1);
+
+  // Nouvelle logique de fin de combat : toute l'équipe KO
+  const playerHasAlivePokemon = playerTeam.some((p: any) => p.is_alive);
+  const opponentHasAlivePokemon = opponentTeam.some((p: any) => p.is_alive);
+  const isCombatEnded = bothActiveChosen && (!playerHasAlivePokemon || !opponentHasAlivePokemon);
+
+  res.json({
+    playerPokemon: playerPokemon || null,
+    opponentPokemon: opponentPokemon || null,
+    playerTeam,
+    opponentTeam,
+    combatLog: match.logs,
+    isPlayerTurn: true, // à améliorer si tu veux une vraie gestion du tour
+    isCombatEnded,
+    status: isCombatEnded ? 'ended' : 'ongoing',
+    isWaitingForOpponent: !bothActiveChosen
+  });
 });
 
-// Route pour vérifier si l'utilisateur a un match en cours
+// Jouer une attaque
+router.post('/match/:matchId/move', authenticateToken, async (req: AuthRequest, res) => {
+  const matchId = Number(req.params.matchId);
+  const userId = req.user!.id;
+  const { moveId, pokemonId } = req.body;
+  if (!activeMatches[matchId]) return res.status(404).json({ error: 'Match not found' });
+  activeMatches[matchId].choices[userId] = { moveId, pokemonId };
+
+  const match = activeMatches[matchId];
+  if (Object.keys(match.choices).length === 2) {
+    const [p1, p2] = match.players;
+    const p1Choice = match.choices[p1];
+    const p2Choice = match.choices[p2];
+    
+    // Récupère les Pokémon actifs depuis la BDD
+    const [pokemons] = await pool.query(
+      `SELECT mp.*, p.name, p.sprite_url, p.speed
+       FROM match_pokemon mp
+       JOIN pokemon p ON mp.pokemon_id = p.id
+       WHERE mp.match_id = ?`,
+      [matchId]
+    );
+    const pokemonsArray = pokemons as any[];
+    let poke1 = pokemonsArray.find((p: any) => p.user_id === p1 && p.is_active === 1);
+    let poke2 = pokemonsArray.find((p: any) => p.user_id === p2 && p.is_active === 1);
+    
+    // Récupère la vitesse
+    const speed1 = poke1?.speed || 1;
+    const speed2 = poke2?.speed || 1;
+    
+    // Récupère les attaques
+    const [move1Arr] = await pool.query('SELECT * FROM moves WHERE id = ?', [p1Choice.moveId]);
+    const [move2Arr] = await pool.query('SELECT * FROM moves WHERE id = ?', [p2Choice.moveId]);
+    const move1 = (move1Arr as any[])[0];
+    const move2 = (move2Arr as any[])[0];
+    
+    // Détermine l'ordre
+    let first, second, firstMove, secondMove, firstUser, secondUser;
+    if (speed1 >= speed2) {
+      first = poke1; firstMove = move1; firstUser = p1;
+      second = poke2; secondMove = move2; secondUser = p2;
+    } else {
+      first = poke2; firstMove = move2; firstUser = p2;
+      second = poke1; secondMove = move1; secondUser = p1;
+    }
+    
+    // Applique la première attaque
+    let logs = [];
+    let damage1 = firstMove.power || 10;
+    second.current_hp = Math.max(0, second.current_hp - damage1);
+    logs.push({ text: `${first.name} utilise ${firstMove.name} et inflige ${damage1} dégâts à ${second.name} !`, color: '#66bb6a' });
+    if (second.current_hp <= 0) {
+      second.is_alive = false;
+      logs.push({ text: `${second.name} est KO !`, color: '#e53935' });
+    }
+    
+    // Si le second est encore en vie, il riposte
+    if (second.current_hp > 0) {
+      let damage2 = secondMove.power || 10;
+      first.current_hp = Math.max(0, first.current_hp - damage2);
+      logs.push({ text: `${second.name} utilise ${secondMove.name} et inflige ${damage2} dégâts à ${first.name} !`, color: '#66bb6a' });
+      if (first.current_hp <= 0) {
+        first.is_alive = false;
+        logs.push({ text: `${first.name} est KO !`, color: '#e53935' });
+      }
+    }
+    
+    // Mets à jour la BDD avec les nouveaux PV et statut
+    await pool.query(
+      'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND is_active = 1',
+      [first.current_hp, first.is_alive, matchId, firstUser]
+    );
+    await pool.query(
+      'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND is_active = 1',
+      [second.current_hp, second.is_alive, matchId, secondUser]
+    );
+    
+    // Ajoute les logs
+    match.logs.push(...logs);
+    match.choices = {};
+    
+    // Récupère l'état complet du match pour la réponse
+    const [pokemons2] = await pool.query(
+      `SELECT mp.*, p.name, p.sprite_url, p.speed
+       FROM match_pokemon mp
+       JOIN pokemon p ON mp.pokemon_id = p.id
+       WHERE mp.match_id = ?`,
+      [matchId]
+    );
+    const pokemonsArray2 = pokemons2 as any[];
+    const playerTeam = pokemonsArray2.filter((p: any) => p.user_id === userId);
+    const opponentTeam = pokemonsArray2.filter((p: any) => p.user_id !== userId);
+    
+    // Vérifie si chaque joueur a encore des Pokémon vivants
+    const playerHasAlivePokemon = playerTeam.some((p: any) => p.is_alive);
+    const opponentHasAlivePokemon = opponentTeam.some((p: any) => p.is_alive);
+    
+    // Détermine si le combat est fini
+    const isCombatEnded = !playerHasAlivePokemon || !opponentHasAlivePokemon;
+    
+    // Récupère le Pokémon actif du joueur
+    const playerPokemon = playerTeam.find((p: any) => p.is_active === 1);
+    const opponentPokemon = opponentTeam.find((p: any) => p.is_active === 1);
+
+    // Vérifie si le joueur a besoin de choisir un nouveau Pokémon
+    const needsPokemonSelection = !isCombatEnded && (
+      // Si le joueur n'a pas de Pokémon actif
+      !playerPokemon ||
+      // Ou si son Pokémon actif est KO
+      (playerPokemon && playerPokemon.current_hp <= 0)
+    );
+
+    // Si le joueur doit choisir un nouveau Pokémon, on met son Pokémon actif à null
+    if (needsPokemonSelection) {
+      await pool.query(
+        'UPDATE match_pokemon SET is_active = 0 WHERE match_id = ? AND user_id = ?',
+        [matchId, userId]
+      );
+    }
+    
+    // Détermine qui doit jouer ensuite
+    // Si un joueur doit choisir un Pokémon, c'est à lui de jouer
+    // Sinon, c'est au joueur qui n'a pas encore joué dans ce round
+    const nextPlayer = isCombatEnded ? null : (
+      needsPokemonSelection ? userId :
+      (firstUser === p1 ? p2 : p1)
+    );
+    
+    if (playerPokemon) {
+      playerPokemon.moves = await getPokemonMoves(playerPokemon.user_pokemon_id, playerPokemon.level) || [];
+    }
+    if (opponentPokemon) {
+      opponentPokemon.moves = await getPokemonMoves(opponentPokemon.user_pokemon_id, opponentPokemon.level) || [];
+    }
+    
+    return res.json({
+      playerPokemon: needsPokemonSelection ? null : playerPokemon,
+      opponentPokemon: opponentPokemon || null,
+      playerTeam,
+      opponentTeam,
+      combatLog: match.logs,
+      isPlayerTurn: !isCombatEnded && nextPlayer === userId,
+      isCombatEnded,
+      status: isCombatEnded ? 'ended' : 'ongoing',
+      needsPokemonSelection
+    });
+  }
+  
+  res.json({ waiting: true });
+});
+
+// Vérifie si l'utilisateur a un match en cours
 router.get('/active', authenticateToken, async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const [rows] = await pool.query(
@@ -296,143 +298,29 @@ router.get('/active', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// Route pour gérer une attaque dans un combat
-router.post('/match/:matchId/move', authenticateToken, async (req: AuthRequest, res) => {
-  const { matchId } = req.params;
-  const { moveId, pokemonId } = req.body;
+router.post('/match/:matchId/choose-active', authenticateToken, async (req: AuthRequest, res) => {
+  const matchId = Number(req.params.matchId);
   const userId = req.user!.id;
+  const { userPokemonId } = req.body;
 
-  // Stocker le choix du joueur
-  if (!pendingMoves.has(Number(matchId))) {
-    pendingMoves.set(Number(matchId), {});
-  }
-  pendingMoves.get(Number(matchId))![userId] = { moveId, pokemonId };
+  // Met tous les Pokémon du joueur à inactif
+  await pool.query('UPDATE match_pokemon SET is_active = 0 WHERE match_id = ? AND user_id = ?', [matchId, userId]);
+  // Met le Pokémon choisi à actif
+  await pool.query('UPDATE match_pokemon SET is_active = 1 WHERE match_id = ? AND user_id = ? AND user_pokemon_id = ?', [matchId, userId, userPokemonId]);
 
-  // Vérifier si l'autre joueur a aussi choisi
-  const moves = pendingMoves.get(Number(matchId));
-  const [match] = await pool.query('SELECT * FROM matches WHERE id = ?', [matchId]);
-  if (!match || (match as any[]).length === 0) {
-    return res.status(404).json({ error: 'Match non trouvé' });
-  }
-  const currentMatch = (match as any[])[0];
-  const player1 = currentMatch.player1_id;
-  const player2 = currentMatch.player2_id;
-
-  if (!moves || !moves[player1] || !moves[player2]) {
-    // On attend l'autre joueur
-    return res.json({ waiting: true, combatLog: [] });
+  // Marque le choix initial comme fait
+  if (activeMatches[matchId]) {
+    activeMatches[matchId].initialActive[userId] = true;
   }
 
-  // 1. Récupérer les infos des deux Pokémon et attaques
-  const [pokemons] = await pool.query(
-    `SELECT mp.*, p.name, p.type, p.sprite_url, up.id as user_pokemon_id, up.level, up.hp, up.max_hp, up.is_shiny, up.user_id as up_user_id
-     FROM match_pokemon mp
-     JOIN pokemon p ON mp.pokemon_id = p.id
-     JOIN user_pokemon up ON mp.user_pokemon_id = up.id
-     WHERE mp.match_id = ?`,
-    [matchId]
-  );
-
-  const getPokemon = (userId: number, userPokemonId: number) =>
-    (pokemons as any[]).find(p => p.user_id === userId && p.user_pokemon_id === userPokemonId);
-
-  const p1Move = moves[player1];
-  const p2Move = moves[player2];
-
-  const p1Pokemon = getPokemon(player1, p1Move.pokemonId);
-  const p2Pokemon = getPokemon(player2, p2Move.pokemonId);
-
-  // Récupérer les attaques
-  const [p1MoveDataArr] = await pool.query('SELECT * FROM moves WHERE id = ?', [p1Move.moveId]);
-  const [p2MoveDataArr] = await pool.query('SELECT * FROM moves WHERE id = ?', [p2Move.moveId]);
-  const p1MoveData = (p1MoveDataArr as any[])[0];
-  const p2MoveData = (p2MoveDataArr as any[])[0];
-
-  // 2. Comparer la vitesse
-  let first, second, firstMove, secondMove, firstMoveData, secondMoveData;
-  if ((p1Pokemon.speed || 1) > (p2Pokemon.speed || 1)) {
-    first = p1Pokemon; firstMove = p1Move; firstMoveData = p1MoveData;
-    second = p2Pokemon; secondMove = p2Move; secondMoveData = p2MoveData;
-  } else {
-    first = p2Pokemon; firstMove = p2Move; firstMoveData = p2MoveData;
-    second = p1Pokemon; secondMove = p1Move; secondMoveData = p1MoveData;
-  }
-
-  // 3. Appliquer les dégâts dans l'ordre
-  const logs = [];
-  let firstDamage = Math.floor((firstMoveData.power || 0) * ((first.speed || 1) / (second.speed || 1)));
-  let secondDamage = Math.floor((secondMoveData.power || 0) * ((second.speed || 1) / (first.speed || 1)));
-
-  let secondNewHp = Math.max(0, second.current_hp - firstDamage);
-  logs.push({
-    text: `${first.name} utilise ${firstMoveData.name} et inflige ${firstDamage} dégâts à ${second.name} !`,
-    color: "#66bb6a"
-  });
-
-  let firstNewHp = first.current_hp;
-  let secondIsKO = false;
-  if (secondNewHp <= 0) {
-    logs.push({ text: `${second.name} est KO !`, color: "#e53935" });
-    secondIsKO = true;
-  } else {
-    // Le second riposte seulement s'il n'est pas KO
-    firstNewHp = Math.max(0, first.current_hp - secondDamage);
-    logs.push({
-      text: `${second.name} utilise ${secondMoveData.name} et inflige ${secondDamage} dégâts à ${first.name} !`,
-      color: "#66bb6a"
-    });
-    if (firstNewHp <= 0) {
-      logs.push({ text: `${first.name} est KO !`, color: "#e53935" });
-    }
-  }
-
-  // 4. Mettre à jour la BDD (PV et KO)
-  await pool.query(
-    'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND user_pokemon_id = ?',
-    [firstNewHp, firstNewHp > 0, matchId, first.user_id, first.user_pokemon_id]
-  );
-  await pool.query(
-    'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND user_pokemon_id = ?',
-    [secondNewHp, secondNewHp > 0, matchId, second.user_id, second.user_pokemon_id]
-  );
-
-  // Vérifier si un joueur a perdu tous ses Pokémon
-  const [aliveP1] = await pool.query('SELECT COUNT(*) as alive FROM match_pokemon WHERE match_id = ? AND user_id = ? AND is_alive = true', [matchId, player1]);
-  const [aliveP2] = await pool.query('SELECT COUNT(*) as alive FROM match_pokemon WHERE match_id = ? AND user_id = ? AND is_alive = true', [matchId, player2]);
-  const p1Alive = (aliveP1 as any[])[0].alive;
-  const p2Alive = (aliveP2 as any[])[0].alive;
-
-  let isCombatEnded = false;
-  let winnerId = null;
-  if (p1Alive === 0 || p2Alive === 0) {
-    isCombatEnded = true;
-    winnerId = p1Alive > 0 ? player1 : player2;
-    await pool.query('UPDATE matches SET status = ?, winner_id = ? WHERE id = ?', ['finished', winnerId, matchId]);
-  }
-
-  // 5. Réinitialiser pendingMoves pour ce match
-  pendingMoves.delete(Number(matchId));
-
-  // 6. Récupérer l'état à jour pour la réponse
-  const [updatedPokemons] = await pool.query(
-    `SELECT mp.*, p.name, p.type, up.id as user_pokemon_id, CASE WHEN up.is_shiny THEN p.sprite_shiny_url ELSE p.sprite_url END as sprite_url
-     FROM match_pokemon mp
-     JOIN pokemon p ON mp.pokemon_id = p.id
-     JOIN user_pokemon up ON mp.user_pokemon_id = up.id
-     WHERE mp.match_id = ?`,
-    [matchId]
-  );
-  const getUpdatedPokemon = (userId: number, userPokemonId: number) =>
-    (updatedPokemons as any[]).find(p => p.user_id === userId && p.user_pokemon_id === userPokemonId);
-
-  res.json({
-    playerPokemon: getUpdatedPokemon(userId, moves[userId].pokemonId),
-    opponentPokemon: getUpdatedPokemon(userId === player1 ? player2 : player1, moves[userId === player1 ? player2 : player1].pokemonId),
-    combatLog: logs,
-    isPlayerTurn: !isCombatEnded, // à ajuster selon ta logique
-    isCombatEnded,
-    winnerId: isCombatEnded ? winnerId : null
-  });
+  res.json({ success: true });
 });
 
+async function chooseActivePokemon(userPokemonId: number) {
+  // ...
+}
+
 export default router;
+
+
+

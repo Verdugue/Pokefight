@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 import authRouter from './routes/auth';
 import pokemonRouter from './routes/pokemon';
-import matchmakingRoutes, { initializeWebSocket } from './routes/matchmaking';
+import matchmakingRoutes from './routes/matchmaking';
 import MatchmakingService from './services/MatchmakingService';
 import { initializeDatabase } from './routes/pokemon';
 
@@ -22,7 +22,7 @@ const io = new Server(server, {
 });
 
 // Initialiser le WebSocket
-initializeWebSocket(io);
+// initializeWebSocket(io);
 
 const PORT = Number(process.env.PORT) || 3001;
 
