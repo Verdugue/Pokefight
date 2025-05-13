@@ -5,6 +5,13 @@
 ### Titre du Projet
 **PokéFight** - Une plateforme de combat Pokémon en ligne
 
+### Comment installer et lancer le projet
+- git clone https://github.com/Verdugue/Pokefight.git
+- dans le fichier racine :
+  npm i
+  - cd /server -> npm i -> npm run dev
+  - cd /client -> npm i -> npm run dev
+
 ### Contexte
 Ce projet s'inscrit dans le cadre d'un cours de développement web avancé, visant à mettre en pratique les concepts de développement full-stack, de gestion de base de données, et de création d'applications web interactives. La thématique Pokémon a été choisie pour son univers riche et son potentiel en termes de mécaniques de jeu et d'interactions utilisateur.
 
