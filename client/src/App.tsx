@@ -58,8 +58,8 @@ const AppRoutes = () => {
   const { user, logout, isAuthenticated } = useAuth()
   const location = useLocation()
 
-  // Ne pas afficher le header sur la page de tutoriel
-  const showHeader = location.pathname !== '/tutorial'
+  // Ne pas afficher le header sur la page de tutoriel, de connexion et d'inscription
+  const showHeader = !['/tutorial', '/login', '/register'].includes(location.pathname)
 
   return (
     <Box>

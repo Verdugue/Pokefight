@@ -7,12 +7,16 @@ const router = express.Router();
 // File d'attente en mémoire
 const waitingPlayers: { userId: number, username: string, team: any[] }[] = [];
 // Matches en cours (en mémoire pour la logique, BDD pour la persistance)
-const activeMatches: { [matchId: number]: { players: number[], choices: { [userId: number]: { moveId: number, pokemonId: number } }, logs: any[], initialActive: { [userId: number]: boolean } } } = {};
+const activeMatches: { [matchId: number]: { players: number[], choices: { [userId: number]: { moveId: number, pokemonId: number } }, logs: any[], initialActive: { [userId: number]: boolean }, currentPlayer: number | null, order?: number[] } } = {};
 
 // Utilitaires à compléter selon ton projet
 async function getUserTeam(userId: number) {
+  // On ne prend que les Pokémon de l'équipe (présents dans team_pokemon)
   const [team] = await pool.query(
-    'SELECT * FROM user_pokemon WHERE user_id = ?',
+    `SELECT up.*, tp.slot FROM user_pokemon up
+     JOIN team_pokemon tp ON tp.user_id = up.user_id AND tp.pokemon_id = up.pokemon_id
+     WHERE tp.user_id = ?
+     ORDER BY tp.slot ASC`,
     [userId]
   );
   return team as any[];
@@ -47,7 +51,7 @@ router.post('/queue', authenticateToken, async (req: AuthRequest, res) => {
     const [result] = await pool.query('INSERT INTO matches (player1_id, player2_id, status) VALUES (?, ?, ?)', [p1.userId, p2.userId, 'in_progress']);
     const matchId = (result as any).insertId;
     // Stocker en mémoire
-    activeMatches[matchId] = { players: [p1.userId, p2.userId], choices: {}, logs: [], initialActive: { [p1.userId]: false, [p2.userId]: false } };
+    activeMatches[matchId] = { players: [p1.userId, p2.userId], choices: {}, logs: [], initialActive: { [p1.userId]: false, [p2.userId]: false }, currentPlayer: null };
     // Insérer les Pokémon de chaque joueur dans match_pokemon
     for (const poke of p1.team) {
       await pool.query(
@@ -126,7 +130,7 @@ router.get('/match/:matchId', authenticateToken, async (req: AuthRequest, res) =
     playerTeam,
     opponentTeam,
     combatLog: match.logs,
-    isPlayerTurn: true, // à améliorer si tu veux une vraie gestion du tour
+    isPlayerTurn: !isCombatEnded && match.currentPlayer === userId,
     isCombatEnded,
     status: isCombatEnded ? 'ended' : 'ongoing',
     isWaitingForOpponent: !bothActiveChosen
@@ -138,150 +142,69 @@ router.post('/match/:matchId/move', authenticateToken, async (req: AuthRequest, 
   const matchId = Number(req.params.matchId);
   const userId = req.user!.id;
   const { moveId, pokemonId } = req.body;
-  if (!activeMatches[matchId]) return res.status(404).json({ error: 'Match not found' });
-  activeMatches[matchId].choices[userId] = { moveId, pokemonId };
 
   const match = activeMatches[matchId];
-  if (Object.keys(match.choices).length === 2) {
-    const [p1, p2] = match.players;
-    const p1Choice = match.choices[p1];
-    const p2Choice = match.choices[p2];
-    
-    // Récupère les Pokémon actifs depuis la BDD
-    const [pokemons] = await pool.query(
-      `SELECT mp.*, p.name, p.sprite_url, p.speed
-       FROM match_pokemon mp
-       JOIN pokemon p ON mp.pokemon_id = p.id
-       WHERE mp.match_id = ?`,
-      [matchId]
-    );
-    const pokemonsArray = pokemons as any[];
-    let poke1 = pokemonsArray.find((p: any) => p.user_id === p1 && p.is_active === 1);
-    let poke2 = pokemonsArray.find((p: any) => p.user_id === p2 && p.is_active === 1);
-    
-    // Récupère la vitesse
-    const speed1 = poke1?.speed || 1;
-    const speed2 = poke2?.speed || 1;
-    
-    // Récupère les attaques
-    const [move1Arr] = await pool.query('SELECT * FROM moves WHERE id = ?', [p1Choice.moveId]);
-    const [move2Arr] = await pool.query('SELECT * FROM moves WHERE id = ?', [p2Choice.moveId]);
-    const move1 = (move1Arr as any[])[0];
-    const move2 = (move2Arr as any[])[0];
-    
-    // Détermine l'ordre
-    let first, second, firstMove, secondMove, firstUser, secondUser;
-    if (speed1 >= speed2) {
-      first = poke1; firstMove = move1; firstUser = p1;
-      second = poke2; secondMove = move2; secondUser = p2;
-    } else {
-      first = poke2; firstMove = move2; firstUser = p2;
-      second = poke1; secondMove = move1; secondUser = p1;
-    }
-    
-    // Applique la première attaque
-    let logs = [];
-    let damage1 = firstMove.power || 10;
-    second.current_hp = Math.max(0, second.current_hp - damage1);
-    logs.push({ text: `${first.name} utilise ${firstMove.name} et inflige ${damage1} dégâts à ${second.name} !`, color: '#66bb6a' });
-    if (second.current_hp <= 0) {
-      second.is_alive = false;
-      logs.push({ text: `${second.name} est KO !`, color: '#e53935' });
-    }
-    
-    // Si le second est encore en vie, il riposte
-    if (second.current_hp > 0) {
-      let damage2 = secondMove.power || 10;
-      first.current_hp = Math.max(0, first.current_hp - damage2);
-      logs.push({ text: `${second.name} utilise ${secondMove.name} et inflige ${damage2} dégâts à ${first.name} !`, color: '#66bb6a' });
-      if (first.current_hp <= 0) {
-        first.is_alive = false;
-        logs.push({ text: `${first.name} est KO !`, color: '#e53935' });
-      }
-    }
-    
-    // Mets à jour la BDD avec les nouveaux PV et statut
-    await pool.query(
-      'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND is_active = 1',
-      [first.current_hp, first.is_alive, matchId, firstUser]
-    );
-    await pool.query(
-      'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND is_active = 1',
-      [second.current_hp, second.is_alive, matchId, secondUser]
-    );
-    
-    // Ajoute les logs
-    match.logs.push(...logs);
-    match.choices = {};
-    
-    // Récupère l'état complet du match pour la réponse
-    const [pokemons2] = await pool.query(
-      `SELECT mp.*, p.name, p.sprite_url, p.speed
-       FROM match_pokemon mp
-       JOIN pokemon p ON mp.pokemon_id = p.id
-       WHERE mp.match_id = ?`,
-      [matchId]
-    );
-    const pokemonsArray2 = pokemons2 as any[];
-    const playerTeam = pokemonsArray2.filter((p: any) => p.user_id === userId);
-    const opponentTeam = pokemonsArray2.filter((p: any) => p.user_id !== userId);
-    
-    // Vérifie si chaque joueur a encore des Pokémon vivants
-    const playerHasAlivePokemon = playerTeam.some((p: any) => p.is_alive);
-    const opponentHasAlivePokemon = opponentTeam.some((p: any) => p.is_alive);
-    
-    // Détermine si le combat est fini
-    const isCombatEnded = !playerHasAlivePokemon || !opponentHasAlivePokemon;
-    
-    // Récupère le Pokémon actif du joueur
-    const playerPokemon = playerTeam.find((p: any) => p.is_active === 1);
-    const opponentPokemon = opponentTeam.find((p: any) => p.is_active === 1);
+  if (!match) return res.status(404).json({ error: 'Match not found' });
 
-    // Vérifie si le joueur a besoin de choisir un nouveau Pokémon
-    const needsPokemonSelection = !isCombatEnded && (
-      // Si le joueur n'a pas de Pokémon actif
-      !playerPokemon ||
-      // Ou si son Pokémon actif est KO
-      (playerPokemon && playerPokemon.current_hp <= 0)
-    );
+  // Vérifie que c'est bien à ce joueur de jouer
+  if (match.currentPlayer !== userId) {
+    return res.status(403).json({ error: 'Ce n\'est pas à vous de jouer' });
+  }
 
-    // Si le joueur doit choisir un nouveau Pokémon, on met son Pokémon actif à null
-    if (needsPokemonSelection) {
-      await pool.query(
-        'UPDATE match_pokemon SET is_active = 0 WHERE match_id = ? AND user_id = ?',
-        [matchId, userId]
-      );
-    }
-    
-    // Détermine qui doit jouer ensuite
-    // Si un joueur doit choisir un Pokémon, c'est à lui de jouer
-    // Sinon, c'est au joueur qui n'a pas encore joué dans ce round
-    const nextPlayer = isCombatEnded ? null : (
-      needsPokemonSelection ? userId :
-      (firstUser === p1 ? p2 : p1)
-    );
-    
-    if (playerPokemon) {
-      playerPokemon.moves = await getPokemonMoves(playerPokemon.user_pokemon_id, playerPokemon.level) || [];
-    }
-    if (opponentPokemon) {
-      opponentPokemon.moves = await getPokemonMoves(opponentPokemon.user_pokemon_id, opponentPokemon.level) || [];
-    }
-    
-    return res.json({
-      playerPokemon: needsPokemonSelection ? null : playerPokemon,
-      opponentPokemon: opponentPokemon || null,
-      playerTeam,
-      opponentTeam,
-      combatLog: match.logs,
-      isPlayerTurn: !isCombatEnded && nextPlayer === userId,
-      isCombatEnded,
-      status: isCombatEnded ? 'ended' : 'ongoing',
-      needsPokemonSelection
-    });
+  // Récupère le Pokémon actif du joueur
+  const [pokemons] = await pool.query(
+    `SELECT mp.*, p.name, p.sprite_url, p.speed
+     FROM match_pokemon mp
+     JOIN pokemon p ON mp.pokemon_id = p.id
+     WHERE mp.match_id = ? AND mp.user_id = ? AND mp.is_active = 1`,
+    [matchId, userId]
+  );
+  const pokemonsArray = pokemons as any[];
+  let poke = pokemonsArray[0];
+  
+  // Récupère la vitesse
+  const speed = poke.speed || 1;
+  
+  // Récupère les attaques
+  const [moveArr] = await pool.query('SELECT * FROM moves WHERE id = ?', [moveId]);
+  const move = (moveArr as any[])[0];
+  
+  // Applique la première attaque
+  let logs = [];
+  let damage = move.power || 10;
+  poke.current_hp = Math.max(0, poke.current_hp - damage);
+  logs.push({ text: `${poke.name} utilise ${move.name} et inflige ${damage} dégâts à ${poke.name} !`, color: '#66bb6a' });
+  if (poke.current_hp <= 0) {
+    poke.is_alive = false;
+    logs.push({ text: `${poke.name} est KO !`, color: '#e53935' });
   }
   
-  res.json({ waiting: true });
+  // Mets à jour la BDD avec les nouveaux PV et statut
+  await pool.query(
+    'UPDATE match_pokemon SET current_hp = ?, is_alive = ? WHERE match_id = ? AND user_id = ? AND is_active = 1',
+    [poke.current_hp, poke.is_alive, matchId, userId]
+  );
+  
+  // Passe le tour à l'autre joueur
+  const otherPlayer = match.players.find(p => p !== userId) ?? null;
+  match.currentPlayer = otherPlayer;
+  
+  // Mets à jour les logs
+  match.logs.push(...logs);
+  
+  // Renvoie le nouvel état du match
+  res.json({
+    playerPokemon: poke,
+    opponentPokemon: otherPlayer
+      ? pokemonsArray.find((p: any) => p.user_id === otherPlayer && p.is_active === 1)
+      : null,
+    playerTeam: pokemonsArray.filter((p: any) => p.user_id === userId),
+    opponentTeam: pokemonsArray.filter((p: any) => p.user_id !== userId),
+    combatLog: match.logs,
+    isPlayerTurn: match.currentPlayer === userId,
+    isCombatEnded: !poke.is_alive,
+    status: !poke.is_alive ? 'ended' : 'ongoing'
+  });
 });
 
 // Vérifie si l'utilisateur a un match en cours
@@ -306,11 +229,39 @@ router.post('/match/:matchId/choose-active', authenticateToken, async (req: Auth
   // Met tous les Pokémon du joueur à inactif
   await pool.query('UPDATE match_pokemon SET is_active = 0 WHERE match_id = ? AND user_id = ?', [matchId, userId]);
   // Met le Pokémon choisi à actif
-  await pool.query('UPDATE match_pokemon SET is_active = 1 WHERE match_id = ? AND user_id = ? AND user_pokemon_id = ?', [matchId, userId, userPokemonId]);
+  const [rows] = await pool.query(
+    'SELECT is_alive FROM match_pokemon WHERE match_id = ? AND user_id = ? AND user_pokemon_id = ?',
+    [matchId, userId, userPokemonId]
+  );
+  const result = rows as { is_alive: number }[];
+  if (!result.length || !result[0].is_alive) {
+    return res.status(400).json({ error: 'Impossible de choisir un Pokémon KO' });
+  }
+  await pool.query(
+    'UPDATE match_pokemon SET is_active = 1 WHERE match_id = ? AND user_id = ? AND user_pokemon_id = ?',
+    [matchId, userId, userPokemonId]
+  );
 
   // Marque le choix initial comme fait
   if (activeMatches[matchId]) {
     activeMatches[matchId].initialActive[userId] = true;
+
+    // Si les deux joueurs ont choisi, on démarre le combat et on choisit qui commence
+    if (!activeMatches[matchId].order) {
+      activeMatches[matchId].order = [];
+    }
+    if (!activeMatches[matchId].order.includes(userId)) {
+      activeMatches[matchId].order.push(userId);
+    }
+    const bothChosen = Object.values(activeMatches[matchId].initialActive).every(Boolean);
+    if (
+      bothChosen &&
+      !activeMatches[matchId].currentPlayer &&
+      activeMatches[matchId].order &&
+      activeMatches[matchId].order.length > 0
+    ) {
+      activeMatches[matchId].currentPlayer = activeMatches[matchId].order[0];
+    }
   }
 
   res.json({ success: true });

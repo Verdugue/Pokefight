@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : dim. 11 mai 2025 à 13:59
--- Version du serveur : 8.4.0
+-- Généré le : lun. 12 mai 2025 à 07:30
+-- Version du serveur : 8.3.0
 -- Version de PHP : 8.2.18
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -472,49 +472,126 @@ CREATE TABLE IF NOT EXISTS `pokemon_learnable_moves` (
 
 INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) VALUES
 (1, 1, 1),
+(2, 1, 1),
+(3, 1, 1),
 (4, 1, 1),
+(5, 1, 1),
+(6, 1, 1),
 (7, 1, 1),
+(8, 1, 1),
+(9, 1, 1),
 (10, 1, 1),
+(11, 1, 1),
+(12, 1, 1),
 (13, 1, 1),
+(14, 1, 1),
+(15, 1, 1),
 (16, 1, 1),
+(17, 1, 1),
+(18, 1, 1),
 (19, 1, 1),
 (20, 1, 1),
+(21, 1, 1),
+(22, 1, 1),
+(23, 1, 1),
+(24, 1, 1),
 (25, 1, 1),
+(26, 1, 1),
 (27, 1, 1),
+(28, 1, 1),
 (29, 1, 1),
+(30, 1, 1),
+(31, 1, 1),
 (32, 1, 1),
+(33, 1, 1),
+(34, 1, 1),
 (35, 1, 1),
 (36, 1, 1),
 (37, 1, 1),
+(38, 1, 1),
 (39, 1, 1),
 (40, 1, 1),
 (41, 1, 1),
 (42, 1, 1),
 (43, 1, 1),
+(44, 1, 1),
+(45, 1, 1),
 (46, 1, 1),
+(47, 1, 1),
 (48, 1, 1),
+(49, 1, 1),
 (50, 1, 1),
+(51, 1, 1),
+(52, 1, 1),
+(53, 1, 1),
+(54, 1, 1),
+(55, 1, 1),
 (56, 1, 1),
+(57, 1, 1),
 (58, 1, 1),
+(59, 1, 1),
 (60, 1, 1),
+(61, 1, 1),
+(62, 1, 1),
 (63, 1, 1),
+(64, 1, 1),
+(65, 1, 1),
+(66, 1, 1),
+(67, 1, 1),
+(68, 1, 1),
+(69, 1, 1),
+(70, 1, 1),
+(71, 1, 1),
 (72, 1, 1),
+(73, 1, 1),
+(74, 1, 1),
+(75, 1, 1),
+(76, 1, 1),
+(77, 1, 1),
+(78, 1, 1),
 (79, 1, 1),
+(80, 1, 1),
 (81, 1, 1),
+(82, 1, 1),
+(83, 1, 1),
 (84, 1, 1),
+(85, 1, 1),
 (86, 1, 1),
+(87, 1, 1),
 (88, 1, 1),
+(89, 1, 1),
 (90, 1, 1),
+(91, 1, 1),
 (92, 1, 1),
+(93, 1, 1),
+(94, 1, 1),
 (95, 1, 1),
 (96, 1, 1),
+(97, 1, 1),
+(98, 1, 1),
+(99, 1, 1),
 (100, 1, 1),
 (101, 1, 1),
+(102, 1, 1),
+(103, 1, 1),
 (104, 1, 1),
 (105, 1, 1),
+(106, 1, 1),
+(107, 1, 1),
+(108, 1, 1),
+(109, 1, 1),
+(110, 1, 1),
 (111, 1, 1),
+(112, 1, 1),
 (113, 1, 1),
+(114, 1, 1),
 (115, 1, 1),
+(116, 1, 1),
+(117, 1, 1),
+(118, 1, 1),
+(119, 1, 1),
+(120, 1, 1),
+(121, 1, 1),
 (122, 1, 1),
 (123, 1, 1),
 (124, 1, 1),
@@ -527,9 +604,19 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (131, 1, 20),
 (132, 1, 1),
 (133, 1, 1),
+(134, 1, 1),
+(135, 1, 1),
+(136, 1, 1),
 (137, 1, 1),
+(138, 1, 1),
+(139, 1, 1),
+(140, 1, 1),
+(141, 1, 1),
 (142, 1, 1),
 (143, 1, 1),
+(144, 1, 1),
+(145, 1, 1),
+(146, 1, 1),
 (147, 1, 13),
 (148, 1, 13),
 (149, 1, 20),
@@ -567,6 +654,7 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (102, 5, 1),
 (103, 5, 1),
 (114, 5, 1),
+(151, 5, 1),
 (1, 6, 7),
 (2, 6, 1),
 (3, 6, 1),
@@ -589,7 +677,6 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (3, 8, 1),
 (44, 8, 1),
 (45, 8, 1),
-(114, 8, 20),
 (4, 9, 1),
 (5, 9, 1),
 (6, 9, 1),
@@ -600,6 +687,7 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (126, 9, 1),
 (136, 9, 1),
 (146, 9, 1),
+(151, 9, 1),
 (4, 10, 7),
 (5, 10, 1),
 (6, 10, 1),
@@ -650,6 +738,7 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (147, 13, 7),
 (148, 13, 7),
 (149, 13, 7),
+(151, 13, 1),
 (7, 14, 7),
 (8, 14, 1),
 (9, 14, 1),
@@ -770,6 +859,7 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (125, 26, 1),
 (135, 26, 1),
 (145, 26, 1),
+(151, 26, 1),
 (25, 27, 15),
 (26, 27, 1),
 (81, 27, 15),
@@ -863,8 +953,8 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (122, 38, 1),
 (124, 38, 13),
 (137, 38, 7),
-(150, 38, 7),
-(151, 38, 7),
+(150, 38, 1),
+(151, 38, 1),
 (63, 39, 1),
 (64, 39, 1),
 (65, 39, 1),
@@ -873,8 +963,6 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (96, 39, 1),
 (97, 39, 1),
 (122, 39, 7),
-(150, 39, 13),
-(151, 39, 13),
 (63, 40, 1),
 (64, 40, 1),
 (65, 40, 1),
@@ -883,6 +971,8 @@ INSERT INTO `pokemon_learnable_moves` (`pokemon_id`, `move_id`, `learn_level`) V
 (96, 40, 1),
 (97, 40, 1),
 (122, 40, 13),
+(150, 40, 1),
+(151, 40, 1),
 (86, 41, 7),
 (87, 41, 1),
 (90, 41, 7),
@@ -937,7 +1027,7 @@ CREATE TABLE IF NOT EXISTS `pokemon_moves` (
   `slot` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_pokemon_moves_pokemon_id` (`pokemon_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `pokemon_moves`
@@ -956,7 +1046,13 @@ INSERT INTO `pokemon_moves` (`id`, `pokemon_id`, `move_id`, `pp_ups`, `slot`) VA
 (12, 5, 35, 0, 2),
 (13, 5, 36, 0, 3),
 (14, 7, 1, 0, 0),
-(15, 7, 13, 0, 1);
+(15, 7, 13, 0, 1),
+(16, 11, 1, 0, 0),
+(17, 13, 1, 0, 0),
+(18, 13, 29, 0, 1),
+(19, 14, 13, 0, 0),
+(20, 15, 1, 0, 0),
+(21, 15, 29, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -1210,7 +1306,7 @@ CREATE TABLE IF NOT EXISTS `team_pokemon` (
   UNIQUE KEY `unique_user_slot` (`user_id`,`slot`),
   UNIQUE KEY `unique_user_pokemon` (`user_id`,`pokemon_id`),
   KEY `pokemon_id` (`pokemon_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `team_pokemon`
@@ -1225,7 +1321,13 @@ INSERT INTO `team_pokemon` (`id`, `user_id`, `pokemon_id`, `slot`) VALUES
 (6, 2, 58, 1),
 (7, 2, 108, 2),
 (8, 2, 69, 4),
-(9, 2, 104, 3);
+(9, 2, 104, 3),
+(10, 3, 52, 0),
+(11, 3, 151, 1),
+(12, 3, 111, 2),
+(17, 3, 50, 3),
+(18, 3, 118, 4),
+(19, 3, 23, 5);
 
 -- --------------------------------------------------------
 
@@ -1287,7 +1389,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `users`
@@ -1295,7 +1397,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `avatar`, `created_at`, `last_login`, `elo_rating`, `wins`, `losses`) VALUES
 (1, 'per', 'per@gmail.com', '$2b$10$YAXDwP5fNYDFyNCrGxkRiujornZsKEw4zj2qZbN.fS.MXsuK0hnOO', NULL, '2025-05-10 13:33:47', '2025-05-11 13:22:31', 1000, 0, 0),
-(2, 'player2', 'p2@gmail.com', '$2b$10$7naUN7ECtcn0nJLtDUVY8uhJ7YC0Qria6.9c3lL6heYcKW73nKcsC', NULL, '2025-05-10 13:42:16', '2025-05-11 13:52:43', 1000, 0, 0);
+(2, 'player2', 'p2@gmail.com', '$2b$10$7naUN7ECtcn0nJLtDUVY8uhJ7YC0Qria6.9c3lL6heYcKW73nKcsC', NULL, '2025-05-10 13:42:16', '2025-05-11 13:52:43', 1000, 0, 0),
+(3, 'lolo', 'lolo@gmail.com', '$2b$10$vQ.whpaYugeiru1GPjY4D.NVpRkBbXHQDiwxBcOFTHVqu7NOGk/VW', NULL, '2025-05-12 07:11:11', NULL, 1000, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -1318,7 +1421,7 @@ CREATE TABLE IF NOT EXISTS `user_pokemon` (
   PRIMARY KEY (`id`),
   KEY `pokemon_id` (`pokemon_id`),
   KEY `idx_user_pokemon_user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Déchargement des données de la table `user_pokemon`
@@ -1333,7 +1436,13 @@ INSERT INTO `user_pokemon` (`id`, `user_id`, `pokemon_id`, `level`, `hp`, `max_h
 (6, 2, 69, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:53'),
 (7, 1, 7, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:54'),
 (8, 2, 108, 1, 50, 50, 0, 0, 'legendary', '2025-05-10 22:41:58'),
-(9, 1, 98, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:59');
+(9, 1, 98, 1, 50, 50, 0, 0, 'normal', '2025-05-10 22:41:59'),
+(10, 3, 52, 1, 50, 50, 0, 0, 'normal', '2025-05-12 07:11:34'),
+(11, 3, 151, 1, 50, 50, 0, 1, '', '2025-05-12 07:11:40'),
+(12, 3, 23, 1, 50, 50, 0, 0, 'normal', '2025-05-12 07:11:52'),
+(13, 3, 50, 1, 50, 50, 0, 0, 'normal', '2025-05-12 07:11:55'),
+(14, 3, 118, 1, 50, 50, 0, 0, 'normal', '2025-05-12 07:11:59'),
+(15, 3, 111, 1, 50, 50, 0, 0, 'normal', '2025-05-12 07:12:02');
 
 --
 -- Déclencheurs `user_pokemon`

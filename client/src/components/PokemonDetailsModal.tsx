@@ -12,6 +12,22 @@ interface PokemonDetailsModalProps {
   open: boolean;
 }
 
+const getRarityLabel = (rarity: number | string, isShiny: boolean) => {
+  if (isShiny) return { label: 'Légendaire', color: '#FFD700' };
+  switch (Number(rarity)) {
+    case 1:
+      return { label: 'Commun', color: '#808080' };
+    case 2:
+      return { label: 'Peu commun', color: '#32CD32' };
+    case 3:
+      return { label: 'Rare', color: '#4169E1' };
+    case 4:
+      return { label: 'Épique', color: '#fff' };
+    default:
+      return { label: 'Inconnu', color: '#000000' };
+  }
+};
+
 export const PokemonDetailsModal: React.FC<PokemonDetailsModalProps> = ({ pokemon, onClose, open }) => {
   const [moves, setMoves] = useState<Move[]>([]);
   const [isShiny, setIsShiny] = useState(false);
@@ -42,6 +58,7 @@ export const PokemonDetailsModal: React.FC<PokemonDetailsModalProps> = ({ pokemo
   }, [pokemon, token]);
 
   if (!pokemon) return null;
+  console.log('Pokemon details modal:', pokemon);
 
   const types = Array.isArray(pokemon.type) 
     ? pokemon.type 
@@ -52,6 +69,11 @@ export const PokemonDetailsModal: React.FC<PokemonDetailsModalProps> = ({ pokemo
     : pokemon.sprite_url || pokemon.image;
 
   const hasShinyVersion = Boolean(pokemon.shiny_sprite_url);
+
+  const { label: rarityLabel, color: rarityColor } = getRarityLabel(
+    typeof pokemon.rarity !== 'undefined' ? pokemon.rarity : 1,
+    !!pokemon.isShiny
+  );
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -106,8 +128,8 @@ export const PokemonDetailsModal: React.FC<PokemonDetailsModalProps> = ({ pokemo
             ))}
           </Box>
 
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Rareté: {pokemon.rarity || 'Commune'}
+          <Typography variant="body1" sx={{ mb: 2, color: rarityColor }}>
+            Rareté: {rarityLabel}
           </Typography>
 
           <Typography variant="h6" sx={{ alignSelf: 'flex-start', mb: 1 }}>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { CombatSystem, CombatState, Move } from '../systems/CombatSystem';
+import { CombatSystem, CombatState, Move, Pokemon } from '../systems/CombatSystem';
 import { API_URL } from '../services/api';
 
 const CombatPage: React.FC = () => {
@@ -56,8 +56,7 @@ const CombatPage: React.FC = () => {
   useEffect(() => {
     // Poll tant qu'on attend l'adversaire OU tant qu'on n'a pas d'adversaire affiché
     const shouldPoll =
-      combatState?.isWaitingForOpponent ||
-      (!combatState?.opponentPokemon && combatState?.playerPokemon);
+      !combatState?.isPlayerTurn && !combatState?.isCombatEnded;
 
     if (shouldPoll) {
       const interval = setInterval(() => {
@@ -67,21 +66,53 @@ const CombatPage: React.FC = () => {
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [combatState?.isWaitingForOpponent, combatState?.opponentPokemon, combatState?.playerPokemon]);
+  }, [combatState?.isPlayerTurn, combatState?.isCombatEnded]);
+
+  console.log('combatState', combatState);
 
   if (!combatState) return <div>Chargement du combat...</div>;
-
-  if (combatState.isCombatEnded) {
-    return <div style={{ color: 'red', fontSize: 32, textAlign: 'center', marginTop: 100 }}>Fin du combat !</div>;
-  }
 
   if (combatState.playerPokemon && combatState.playerPokemon.current_hp <= 0) {
     return <div style={{ color: 'orange', fontSize: 28, textAlign: 'center', marginTop: 100 }}>Votre Pokémon est KO ! Veuillez en choisir un autre.</div>;
   }
 
-  if (combatState.isWaitingForOpponent) {
-    return <div style={{ color: '#fff', fontSize: 28, textAlign: 'center', marginTop: 100 }}>En attente que l'adversaire choisisse son Pokémon...</div>;
+  if (!combatState.playerPokemon || !combatState.playerPokemon.is_active) {
+    return (
+      <div style={{ background: '#3b4cca', minHeight: '100vh', color: '#fff', padding: 32 }}>
+        <h2>Choisissez votre Pokémon actif</h2>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {combatState.playerTeam.map(poke => (
+            <button
+              key={poke.user_pokemon_id}
+              onClick={() => poke.is_alive && chooseActivePokemon(poke.user_pokemon_id)}
+              style={{
+                padding: 16,
+                borderRadius: 8,
+                background: poke.is_alive ? '#ffde00' : '#ccc',
+                color: '#3b4cca',
+                fontWeight: 'bold',
+                border: 'none',
+                cursor: poke.is_alive ? 'pointer' : 'not-allowed',
+                opacity: poke.is_alive ? 1 : 0.5
+              }}
+              disabled={!poke.is_alive}
+            >
+              <img src={poke.sprite_url} alt={poke.name} style={{ width: 60, filter: poke.is_alive ? 'none' : 'grayscale(1)' }} /><br />
+              {poke.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   }
+
+  if (!combatState.playerPokemon || !combatState.opponentPokemon) {
+    return <div style={{ color: '#fff', fontSize: 28, textAlign: 'center', marginTop: 100 }}>
+      En attente que les deux joueurs choisissent leur Pokémon...
+    </div>;
+  }
+
+  const isWaitingTurn = !combatState.isPlayerTurn && !combatState.isCombatEnded;
 
   const handleMoveSelect = (move: Move) => {
     if (combatSystem.current && !isAnimating && combatState.isPlayerTurn) {
@@ -105,36 +136,19 @@ const CombatPage: React.FC = () => {
     }
   }
 
-  // Si aucun Pokémon actif, propose le choix
-  if (!combatState.playerPokemon || !combatState.playerPokemon.is_active) {
-    return (
-      <div style={{ background: '#3b4cca', minHeight: '100vh', color: '#fff', padding: 32 }}>
-        <h2>Choisissez votre Pokémon actif</h2>
-        <div style={{ display: 'flex', gap: 16 }}>
-          {combatState.playerTeam
-            .filter(p => p.is_alive)
-            .map(poke => (
-              <button
-                key={poke.user_pokemon_id}
-                onClick={() => chooseActivePokemon(poke.user_pokemon_id)}
-                style={{
-                  padding: 16,
-                  borderRadius: 8,
-                  background: '#ffde00',
-                  color: '#3b4cca',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <img src={poke.sprite_url} alt={poke.name} style={{ width: 60 }} /><br />
-                {poke.name}
-              </button>
-            ))}
-        </div>
-      </div>
-    );
-  }
+  console.log('isPlayerTurn', combatState.isPlayerTurn);
+  console.log('playerPokemon', combatState.playerPokemon);
+  console.log('opponentPokemon', combatState.opponentPokemon);
+  console.log('playerTeam', combatState.playerTeam);
+  console.log('opponentTeam', combatState.opponentTeam);
+  console.log('moves', combatState.playerPokemon?.moves);
+  console.log('isAnimating', isAnimating);
+
+  const emptyPokemon: Pokemon = {
+    id: -1, name: 'Slot vide', current_hp: 0, max_hp: 0, speed: 0, moves: [], user_id: -1, is_alive: false, sprite_url: '', user_pokemon_id: -1
+  };
+  const paddedPlayerTeam = [...combatState.playerTeam];
+  while (paddedPlayerTeam.length < 6) paddedPlayerTeam.push(emptyPokemon);
 
   return (
     <div style={{ background: '#3b4cca', minHeight: '100vh', color: '#fff', padding: 32 }}>
@@ -144,7 +158,7 @@ const CombatPage: React.FC = () => {
         {combatState.playerPokemon && (
           <div style={{ textAlign: 'center' }}>
             <img src={combatState.playerPokemon.sprite_url} alt={combatState.playerPokemon.name} style={{ width: 120 }} />
-            <div>{combatState.playerPokemon.name}</div>
+            <div>{combatState.playerPokemon.name || '??'}</div>
             <div>PV : {combatState.playerPokemon.current_hp} / {combatState.playerPokemon.max_hp}</div>
           </div>
         )}
@@ -183,7 +197,12 @@ const CombatPage: React.FC = () => {
         </div>
       </div>
       {/* Attaques */}
-      {combatState.isPlayerTurn &&
+      {isWaitingTurn ? (
+        <div style={{ color: '#fff', fontSize: 28, textAlign: 'center', marginTop: 100 }}>
+          En attente du tour de l'adversaire...
+        </div>
+      ) : (
+        combatState.isPlayerTurn &&
         combatState.playerPokemon &&
         Array.isArray(combatState.playerPokemon.moves) &&
         combatState.playerPokemon.moves.length > 0 &&
@@ -196,7 +215,8 @@ const CombatPage: React.FC = () => {
               ))}
             </div>
           </div>
-        )}
+        )
+      )}
       {/* Bouton pour reset ou quitter */}
       <div style={{ marginTop: 48 }}>
         <button onClick={() => window.location.reload()} style={{ padding: 10, borderRadius: 8, background: '#ffde00', color: '#3b4cca', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Quitter / Recharger</button>

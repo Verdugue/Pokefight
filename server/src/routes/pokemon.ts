@@ -476,7 +476,10 @@ router.get('/pokedex', authenticateToken, async (req: AuthRequest, res) => {
         p.id,
         p.name,
         p.type,
-        p.sprite_url as image,
+        p.rarity,
+        p.catch_rate,
+        p.sprite_url,
+        p.sprite_shiny_url,
         EXISTS(
           SELECT 1 
           FROM user_pokemon up 

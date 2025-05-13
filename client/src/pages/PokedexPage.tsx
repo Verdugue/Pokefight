@@ -17,6 +17,8 @@ import { API_URL } from '../services/api';
 import { Pokemon } from '../types/pokemon';
 import { PokemonDetailsModal } from '../components/PokemonDetailsModal';
 import { TYPE_COLORS, PokemonType } from '../utils/typeColors';
+import SportsBaseballIcon from '@mui/icons-material/SportsBaseball';
+import { red } from '@mui/material/colors';
 
 const PokedexPage: React.FC = () => {
   const { token } = useAuth();
@@ -26,6 +28,7 @@ const PokedexPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortCaughtFirst, setSortCaughtFirst] = useState(false);
 
   useEffect(() => {
     const fetchPokemon = async () => {
@@ -66,6 +69,10 @@ const PokedexPage: React.FC = () => {
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const displayedPokemon = sortCaughtFirst
+    ? [...filteredPokemon].sort((a, b) => Number(b.isCaught) - Number(a.isCaught))
+    : filteredPokemon;
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -89,18 +96,31 @@ const PokedexPage: React.FC = () => {
       <Paper
         elevation={3}
         sx={{
-          p: 3,
           mb: 4,
-          background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
           color: 'white',
+          boxShadow: 'none',
         }}
       >
-        <Typography variant="h4" component="h1" gutterBottom>
-          Pokédex
-        </Typography>
-        <Typography variant="h6">
-          Pokémon capturés : {caughtCount} / {pokemon.length}
-        </Typography>
+        
+        <Box display="flex" alignItems="center" sx={{
+          cursor: 'pointer',
+          borderRadius: '10px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#6bc3ff',
+          width: '150px',
+          height: '50px',
+          transition: 'background 0.2s, box-shadow 0.2s',
+          '&:hover': {
+            backgroundColor: '#338fce',
+            boxShadow: '0 4px 16px 0 #e5393533',
+          },
+        }} onClick={() => setSortCaughtFirst(v => !v)}>
+          <SportsBaseballIcon sx={{ color: red[500], fontSize: 32, mr: 1 }} />
+          <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold', mr: 1 }}>
+            {caughtCount} / {pokemon.length}
+          </Typography>
+        </Box>
       </Paper>
 
       <TextField
@@ -113,7 +133,7 @@ const PokedexPage: React.FC = () => {
       />
 
       <Grid container spacing={3}>
-        {filteredPokemon.map((pokemon) => (
+        {displayedPokemon.map((pokemon) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={pokemon.id}>
             <Card
               sx={{

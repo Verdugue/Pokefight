@@ -490,7 +490,6 @@ INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
 (114, 5, 1),   -- Fouet Lianes
 (114, 6, 7),   -- Tranch'Herbe
 (114, 7, 13),  -- Vampigraine
-(114, 8, 20),  -- Lance-Soleil
 
 -- Kangourex
 (115, 1, 1),   -- Charge
@@ -658,10 +657,85 @@ INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
 
 -- Mewtwo
 (150, 1, 1),   -- Charge
-(150, 38, 7),  -- Psyko
-(150, 39, 13), -- Téléport
+(150, 38, 1),  -- Psyko
+(150, 40, 1),  -- Hypnose
 
 -- Mew
 (151, 1, 1),   -- Charge
-(151, 38, 7),  -- Psyko
-(151, 39, 13); -- Téléport 
+(151, 38, 1),  -- Psyko
+(151, 40, 1),  -- Hypnose
+(151, 5, 1),   -- Fouet Lianes
+(151, 9, 1),   -- Flammèche
+(151, 13, 1),  -- Pistolet à O
+(151, 26, 1);  -- Éclair
+
+-- Mewtwo (id 150) et Mew (id 151)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(150, 38, 1),  -- Psyko
+(150, 40, 1),  -- Hypnose
+(151, 38, 1),  -- Psyko
+(151, 40, 1),  -- Hypnose
+(151, 5, 1),   -- Fouet Lianes
+(151, 9, 1),   -- Flammèche
+(151, 13, 1),  -- Pistolet à O
+(151, 26, 1);  -- Éclair
+
+-- Attaques spécifiques pour les Pokémon manquants
+-- Miaouss (id 52) et Persian (id 53)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(52, 2, 1),    -- Griffe
+(53, 2, 1);    -- Griffe
+
+-- Psykokwak (id 54) et Akwakwak (id 55)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(54, 13, 1),   -- Pistolet à O
+(54, 38, 7),   -- Psyko
+(55, 13, 1),   -- Pistolet à O
+(55, 14, 1),   -- Bulle d'O
+(55, 15, 7),   -- Hydrocanon
+(55, 38, 1);   -- Psyko
+
+-- Férosinge (id 56) et Colossinge (id 57)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(57, 35, 1),   -- Poing-Karaté
+(57, 36, 1),   -- Balayage
+(57, 37, 1);   -- Poing de Feu
+
+-- Canarticho (id 83)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(83, 20, 1),   -- Tornade
+(83, 21, 7);   -- Cru-Aile
+
+-- Excelangue (id 108)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(108, 4, 1),   -- Morsure
+(108, 46, 7);  -- Léchouille
+
+-- Kicklee (id 106) et Tygnon (id 107)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(106, 35, 1),  -- Poing-Karaté
+(106, 36, 1),  -- Balayage
+(106, 37, 7),  -- Poing de Feu
+(107, 35, 1),  -- Poing-Karaté
+(107, 36, 1),  -- Balayage
+(107, 37, 7);  -- Poing de Feu
+
+-- Smogo (id 109) et Smogogo (id 110)
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level) VALUES
+(109, 23, 1),  -- Gaz Toxik
+(109, 24, 7),  -- Acide
+(109, 25, 13), -- Bomb-Beurk
+(110, 23, 1),  -- Gaz Toxik
+(110, 24, 1),  -- Acide
+(110, 25, 1);  -- Bomb-Beurk
+
+-- Ajouter l'attaque Charge (move_id=1) uniquement aux Pokémon qui n'en ont pas encore
+INSERT INTO pokemon_learnable_moves (pokemon_id, move_id, learn_level)
+SELECT p.id, 1, 1
+FROM pokemon p
+WHERE p.id NOT IN (
+    SELECT DISTINCT pokemon_id 
+    FROM pokemon_learnable_moves 
+    WHERE move_id = 1
+)
+AND p.id BETWEEN 1 AND 151; 

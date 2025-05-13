@@ -69,7 +69,7 @@ class MatchmakingService {
       const player: QueuePlayer = {
         userId,
         socket,
-        elo: rows[0].elo || 1000,
+        elo: (rows[0] as { elo?: number }).elo || 1000,
         joinedAt: Date.now()
       };
 
