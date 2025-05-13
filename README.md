@@ -11,6 +11,8 @@
   npm i
   - cd /server -> npm i -> npm run dev
   - cd /client -> npm i -> npm run dev
+- Ouvrez votre gestionnaire de base de données et impoortez le fichier pokefight.sql
+- Puis dans votre navigateur tapez htpp://localhost:3000
 
 ### Contexte
 Ce projet s'inscrit dans le cadre d'un cours de développement web avancé, visant à mettre en pratique les concepts de développement full-stack, de gestion de base de données, et de création d'applications web interactives. La thématique Pokémon a été choisie pour son univers riche et son potentiel en termes de mécaniques de jeu et d'interactions utilisateur.
