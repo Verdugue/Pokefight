@@ -143,8 +143,18 @@ pokefight/
 
 3. **Sécurité**
    - Validation des entrées utilisateur
+
+
    - Chiffrement des mots de passe
    - Protection contre les attaques CSRF
 
 ## Conclusion
 PokéFight représente un défi technique intéressant combinant développement web moderne, gestion de données en temps réel, et création d'une expérience utilisateur immersive. Le projet permet de mettre en pratique de nombreux concepts de développement full-stack tout en créant une application ludique et fonctionnelle. 
+
+
+-reste a finir:
+ -fin du systeme de combat 
+ -systeme de classement
+ -page gagnant et perdant -> baisse ou augmentation de rang.
+ 
+--
